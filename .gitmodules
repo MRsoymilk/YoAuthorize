@@ -7,9 +7,6 @@
 [submodule "vendor/spdlog"]
 	path = vendor/spdlog
 	url = https://github.com/gabime/spdlog
-[submodule "vendor/grpc"]
-	path = vendor/grpc
-	url = https://github.com/grpc/grpc.git
 [submodule "vendor/tomlplusplus"]
 	path = vendor/tomlplusplus
 	url = https://github.com/marzer/tomlplusplus.git
@@ -19,3 +16,9 @@
 [submodule "vendor/gflags"]
 	path = vendor/gflags
 	url = https://github.com/gflags/gflags.git
+[submodule "vendor/brpc"]
+	path = vendor/brpc
+	url = https://github.com/apache/brpc
+[submodule "vendor/simdjson"]
+	path = vendor/simdjson
+	url = https://github.com/simdjson/simdjson
