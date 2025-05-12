@@ -21,7 +21,7 @@ public:
     struct NodeStatus {
       std::string id;       // Unique node identifier
       std::string address;  // URL (e.g., tls+tcp://127.0.0.1:5555)
-      long uptime;          // Seconds since node started
+      long long uptime;          // Seconds since node started
       std::string info;     // Additional info (e.g., load, version)
 
       std::string to_string() const;

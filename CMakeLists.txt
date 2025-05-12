@@ -4,6 +4,16 @@ project(ya-net VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+
+if (MSVC)
+    foreach(flag_var
+            CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+            CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
+        string (REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        string (REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+    endforeach()
+endif()
+
 add_executable(${PROJECT_NAME} src/main.cpp)
 
 configure_file(
@@ -48,4 +58,3 @@ target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
 # brpc
 # add_subdirectory(vendor/brpc)
 # target_link_libraries(${PROJECT_NAME} PRIVATE brpc)
-
