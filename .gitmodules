@@ -1,9 +1,6 @@
 [submodule "vendor/nng"]
 	path = vendor/nng
 	url = https://github.com/nanomsg/nng.git
-[submodule "vendor/json"]
-	path = vendor/json
-	url = https://github.com/nlohmann/json
 [submodule "vendor/spdlog"]
 	path = vendor/spdlog
 	url = https://github.com/gabime/spdlog
