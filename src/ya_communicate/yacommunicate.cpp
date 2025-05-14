@@ -1,4 +1,4 @@
-#include "ya_communicate.h"
+#include "yacommunicate.h"
 
 #include <nng/nng.h>
 #include <nng/protocol/pubsub0/pub.h>
@@ -527,5 +527,9 @@ void YaCommunicate::P2PNode::subscribe_status(
 std::vector<std::string> YaCommunicate::P2PNode::get_known_nodes() const {
   return m_impl->get_known_nodes();
 }
+
+void YaCommunicate::P2PNode::start_http_server(int port) {}
+
+void YaCommunicate::P2PNode::stop_http_server() {}
 
 } // namespace ya

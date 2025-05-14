@@ -1,16 +1,35 @@
 #ifndef YA_UTILS_H
 
+#include <bits/chrono.h>
+
+#include <map>
 #include <string>
 
 class YaUtils {
  public:
-  static std::string GetExeDir();
-  static std::string GetExeName();
-  static std::string GetExePath();
-  static void ProcessArgs(int argc, char* argv[]);
+  class Exe {
+   public:
+    static std::string GetExeDir();
+    static std::string GetExeName();
+    static std::string GetExePath();
+    static void ProcessArgs(int argc, char* argv[]);
 
- private:
-  static std::string m_exe_name;
+   private:
+    static std::string m_exe_name;
+  };
+
+  class Timer {
+   public:
+    static void StartTimer(const std::string& timer_id = "0");
+    static double GetElapsedTime_ms(const std::string& timer_id = "0");
+    static double GetElapsedTime_s(const std::string& timer_id = "0");
+    static double GetElapsedTime_μs(const std::string& timer_id = "0");
+    static void Sleep(unsigned int ms);
+
+   private:
+    static std::map<std::string, std::chrono::steady_clock::time_point>
+        m_timers;
+  };
 };
 
 #endif  // !YA_UTILS_H

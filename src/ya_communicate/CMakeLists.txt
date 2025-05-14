@@ -1,6 +1,6 @@
 add_library(ya_communicate STATIC
-  ya_communicate.h
-  ya_communicate.cpp
+  yacommunicate.h
+  yacommunicate.cpp
 )
 
 target_include_directories(ya_communicate PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

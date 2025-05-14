@@ -55,6 +55,11 @@ public:
       // Get current known nodes
       std::vector<std::string> get_known_nodes() const;
 
+      // Start HTTP server on specified port
+      void start_http_server(int port);
+
+      // Stop HTTP server
+      void stop_http_server();
       // Prevent copying
       P2PNode(const P2PNode&) = delete;
       P2PNode& operator=(const P2PNode&) = delete;

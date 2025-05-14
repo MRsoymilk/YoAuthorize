@@ -34,6 +34,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ya_config)
 add_subdirectory(src/ya_communicate)
 target_link_libraries(${PROJECT_NAME} PRIVATE ya_communicate)
 
+add_subdirectory(src/ya_json)
+target_link_libraries(${PROJECT_NAME} PRIVATE ya_json)
+
 add_subdirectory(test)
 
 # spdlog
