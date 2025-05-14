@@ -26,7 +26,6 @@ void YaBIOS::init() {
       file.close();
     }
   }
-
   {
     std::ifstream file("/sys/class/dmi/id/bios_vendor");
     if (file.is_open()) {
@@ -34,7 +33,6 @@ void YaBIOS::init() {
       file.close();
     }
   }
-
   {
     std::ifstream file("/sys/class/dmi/id/bios_version");
     if (file.is_open()) {

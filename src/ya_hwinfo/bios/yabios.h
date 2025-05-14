@@ -11,6 +11,8 @@ class YaBIOS {
   std::string getManufacturer();
   std::string getVersion();
   std::string getDate();
+
+ private:
   void init();
 
  private:
