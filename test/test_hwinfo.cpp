@@ -19,3 +19,18 @@ TEST(HwinfoTest, BIOS) {
                    bios.version)
             << std::endl;
 }
+
+TEST(HwinfoTest, MOTHERBOARD) {
+  YaHwinfo info;
+  auto motherboard = info.getMOTHERBOARD();
+
+  std::cout << std::format(
+                   "MOTHERBOARD:\n"
+                   "name:          {}\n"
+                   "manufacturer:  {}\n"
+                   "serial_number: {}\n"
+                   "version:       {}\n",
+                   motherboard.name, motherboard.manufacturer,
+                   motherboard.serial_number, motherboard.version)
+            << std::endl;
+}

@@ -26,7 +26,16 @@ class YaHwinfo::Impl {
   std::vector<MEMORY> getMEMORY() { return {}; }
   std::vector<OS> getOS() { return {}; }
   std::vector<DISK> getDISK() { return {}; }
-  std::vector<MOTHERBOARD> getMOTHERBOARD() { return {}; }
+  MOTHERBOARD getMOTHERBOARD() {
+    YaMOTHERBOARD ya_motherboard;
+    MOTHERBOARD motherboard{
+        .serial_number = ya_motherboard.getSerialNumber(),
+        .manufacturer = ya_motherboard.getManufacturer(),
+        .version = ya_motherboard.getVersion(),
+        .name = ya_motherboard.getName(),
+    };
+    return motherboard;
+  }
   std::vector<NETWORK> getNETWORK() { return {}; }
 
  private:
@@ -48,8 +57,6 @@ std::vector<OS> YaHwinfo::getOS() { return m_impl->getOS(); }
 
 std::vector<DISK> YaHwinfo::getDISK() { return m_impl->getDISK(); }
 
-std::vector<MOTHERBOARD> YaHwinfo::getMOTHERBOARD() {
-  return m_impl->getMOTHERBOARD();
-}
+MOTHERBOARD YaHwinfo::getMOTHERBOARD() { return m_impl->getMOTHERBOARD(); }
 
 std::vector<NETWORK> YaHwinfo::getNETWORK() { return m_impl->getNETWORK(); }

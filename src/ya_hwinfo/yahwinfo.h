@@ -16,7 +16,7 @@ class YaHwinfo {
   std::vector<MEMORY> getMEMORY();
   std::vector<OS> getOS();
   std::vector<DISK> getDISK();
-  std::vector<MOTHERBOARD> getMOTHERBOARD();
+  MOTHERBOARD getMOTHERBOARD();
   std::vector<NETWORK> getNETWORK();
 
  private:
