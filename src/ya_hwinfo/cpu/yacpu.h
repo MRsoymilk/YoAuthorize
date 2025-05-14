@@ -1,7 +1,7 @@
 #ifndef YACPU_H
 #define YACPU_H
 
-#include <string>
+#include "info_def.h"
 
 class YaCPU {
  public:
@@ -17,10 +17,7 @@ class YaCPU {
   void init();
 
  private:
-  std::string m_serial_number;
-  std::string m_architecture;
-  std::string m_manufacturer;
-  std::string m_name;
+  CPU m_cpu;
 };
 
 #endif  // YACPU_H

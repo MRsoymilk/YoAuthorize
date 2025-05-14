@@ -16,10 +16,7 @@ class YaBIOS {
   void init();
 
  private:
-  std::string m_serial_number;
-  std::string m_manufacturer;
-  std::string m_version;
-  std::string m_date;
+  BIOS m_bios;
 };
 
 #endif  // !YA_BIOS_H

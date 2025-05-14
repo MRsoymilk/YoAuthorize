@@ -14,7 +14,7 @@ class YaHwinfo {
   CPU getCPU();
   std::vector<GPU> getGPU();
   std::vector<MEMORY> getMEMORY();
-  std::vector<OS> getOS();
+  OS getOS();
   std::vector<DISK> getDISK();
   MOTHERBOARD getMOTHERBOARD();
   std::vector<NETWORK> getNETWORK();

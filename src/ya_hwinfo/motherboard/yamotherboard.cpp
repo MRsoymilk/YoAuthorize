@@ -8,13 +8,17 @@ YaMOTHERBOARD::YaMOTHERBOARD() { init(); }
 
 YaMOTHERBOARD::~YaMOTHERBOARD() {}
 
-std::string YaMOTHERBOARD::getSerialNumber() { return m_serial_number; }
+std::string YaMOTHERBOARD::getSerialNumber() {
+  return m_motherboard.serial_number;
+}
 
-std::string YaMOTHERBOARD::getManufacturer() { return m_manufacturer; }
+std::string YaMOTHERBOARD::getManufacturer() {
+  return m_motherboard.manufacturer;
+}
 
-std::string YaMOTHERBOARD::getVersion() { return m_version; }
+std::string YaMOTHERBOARD::getVersion() { return m_motherboard.version; }
 
-std::string YaMOTHERBOARD::getName() { return m_name; }
+std::string YaMOTHERBOARD::getName() { return m_motherboard.name; }
 
 void YaMOTHERBOARD::init() {
 #if defined(YA_LINUX)
@@ -22,28 +26,28 @@ void YaMOTHERBOARD::init() {
   {
     std::ifstream file("/sys/class/dmi/id/board_serial");
     if (file.is_open()) {
-      std::getline(file, m_serial_number);
+      std::getline(file, m_motherboard.serial_number);
       file.close();
     }
   }
   {
     std::ifstream file("/sys/class/dmi/id/board_vendor");
     if (file.is_open()) {
-      std::getline(file, m_manufacturer);
+      std::getline(file, m_motherboard.manufacturer);
       file.close();
     }
   }
   {
     std::ifstream file("/sys/class/dmi/id/board_version");
     if (file.is_open()) {
-      std::getline(file, m_version);
+      std::getline(file, m_motherboard.version);
       file.close();
     }
   }
   {
     std::ifstream file("/sys/class/dmi/id/board_name");
     if (file.is_open()) {
-      std::getline(file, m_name);
+      std::getline(file, m_motherboard.name);
       file.close();
     }
   }

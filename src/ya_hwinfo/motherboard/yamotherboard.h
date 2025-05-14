@@ -16,10 +16,7 @@ class YaMOTHERBOARD {
   void init();
 
  private:
-  std::string m_serial_number;
-  std::string m_manufacturer;
-  std::string m_version;
-  std::string m_name;
+  MOTHERBOARD m_motherboard;
 };
 
 #endif  // !YA_MOTHERBOARD_H

@@ -12,13 +12,13 @@ YaCPU::YaCPU() { init(); }
 
 YaCPU::~YaCPU() {}
 
-std::string YaCPU::getSerialNumber() { return m_serial_number; }
+std::string YaCPU::getSerialNumber() { return m_cpu.serial_number; }
 
-std::string YaCPU::getArchitecture() { return m_architecture; }
+std::string YaCPU::getArchitecture() { return m_cpu.architecture; }
 
-std::string YaCPU::getManufacturer() { return m_manufacturer; }
+std::string YaCPU::getManufacturer() { return m_cpu.manufacturer; }
 
-std::string YaCPU::getName() { return m_name; }
+std::string YaCPU::getName() { return m_cpu.name; }
 
 void YaCPU::init() {
 #if defined(YA_LINUX)
@@ -45,19 +45,19 @@ void YaCPU::init() {
     return "";
   };
 
-  m_manufacturer = get_cpu_field("vendor_id");
-  m_name = get_cpu_field("model name");
-  m_serial_number = get_cpu_field("serial");
+  m_cpu.manufacturer = get_cpu_field("vendor_id");
+  m_cpu.name = get_cpu_field("model name");
+  m_cpu.serial_number = get_cpu_field("serial");
 
   struct utsname buf;
   if (uname(&buf) == 0) {
-    m_architecture = buf.machine;
+    m_cpu.architecture = buf.machine;
   } else {
-    m_architecture = "";
+    m_cpu.architecture = "";
   }
 
-  if (m_serial_number.empty() || m_serial_number == "Not Specified") {
-    m_serial_number = "";
+  if (m_cpu.serial_number.empty() || m_cpu.serial_number == "Not Specified") {
+    m_cpu.serial_number = "";
   }
 #endif
 }
