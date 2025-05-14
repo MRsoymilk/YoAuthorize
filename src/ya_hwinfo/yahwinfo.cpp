@@ -31,14 +31,9 @@ class YaHwinfo::Impl {
     };
     return cpu;
   }
-  GPU getGPU() {
+  std::vector<GPU> getGPU() {
     YaGPU ya_gpu;
-    GPU gpu{
-        .serial_number = ya_gpu.getSerialNumber(),
-        .manufacturer = ya_gpu.getManufacturer(),
-        .name = ya_gpu.getName(),
-    };
-    return gpu;
+    return ya_gpu.getGPU();
   }
   std::vector<MEMORY> getMEMORY() { return {}; }
   OS getOS() {
@@ -77,7 +72,7 @@ BIOS YaHwinfo::getBIOS() { return m_impl->getBIOS(); }
 
 CPU YaHwinfo::getCPU() { return m_impl->getCPU(); }
 
-GPU YaHwinfo::getGPU() { return m_impl->getGPU(); }
+std::vector<GPU> YaHwinfo::getGPU() { return m_impl->getGPU(); }
 
 std::vector<MEMORY> YaHwinfo::getMEMORY() { return m_impl->getMEMORY(); }
 

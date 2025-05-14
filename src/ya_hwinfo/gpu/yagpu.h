@@ -1,21 +1,22 @@
 #ifndef YA_GPU_H
 #define YA_GPU_H
 
+#include <vector>
+
 #include "info_def.h"
 
 class YaGPU {
  public:
   YaGPU();
   ~YaGPU();
-  std::string getName();
-  std::string getSerialNumber();
-  std::string getManufacturer();
+
+  std::vector<GPU> getGPU();
 
  private:
   void init();
 
  private:
-  GPU m_gpu;
+  std::vector<GPU> m_gpus;
 };
 
 #endif  // !YA_GPU_H

@@ -52,13 +52,15 @@ TEST(HwinfoTest, DISK) {
 TEST(HwinfoTest, GPU) {
   YaHwinfo info;
   auto gpu = info.getGPU();
-  std::cout << std::format(
-                   "GPU:\n"
-                   "name:          {}\n"
-                   "manufacturer:  {}\n"
-                   "serial_number: {}\n",
-                   gpu.name, gpu.manufacturer, gpu.serial_number)
-            << std::endl;
+  for (int i = 0; i < gpu.size(); ++i) {
+    std::cout << std::format(
+                     "GPU_{}:\n"
+                     "name:          {}\n"
+                     "manufacturer:  {}\n"
+                     "serial_number: {}\n",
+                     i, gpu[i].name, gpu[i].manufacturer, gpu[i].serial_number)
+              << std::endl;
+  }
 }
 
 TEST(HwinfoTest, MEMORY) {

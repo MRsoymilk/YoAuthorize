@@ -9,11 +9,7 @@ YaGPU::YaGPU() { init(); }
 
 YaGPU::~YaGPU() {}
 
-std::string YaGPU::getName() { return m_gpu.name; }
-
-std::string YaGPU::getSerialNumber() { return m_gpu.serial_number; }
-
-std::string YaGPU::getManufacturer() { return m_gpu.manufacturer; }
+std::vector<GPU> YaGPU::getGPU() { return m_gpus; }
 
 void YaGPU::init() {
 #if defined(YA_LINUX)
@@ -49,11 +45,11 @@ void YaGPU::init() {
       vendor_id = trim(vendor_id);
       device_id = trim(device_id);
 
-      m_gpu.manufacturer = vendor_id_to_name(vendor_id);
-      m_gpu.serial_number = device_id;
-      m_gpu.name = name;
-
-      break;  // TODO: multi GPU
+      GPU gpu;
+      gpu.manufacturer = vendor_id_to_name(vendor_id);
+      gpu.serial_number = device_id;
+      gpu.name = name;
+      m_gpus.push_back(gpu);
     }
   }
 #endif
