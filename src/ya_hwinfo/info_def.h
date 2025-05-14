@@ -20,11 +20,13 @@ struct CPU {
 struct DISK {
   std::string serial_number;
   std::string manufacturer;
+  std::string name;
 };
 
 struct GPU {
   std::string serial_number;
   std::string manufacturer;
+  std::string name;
 };
 
 struct MEMORY {

@@ -31,7 +31,15 @@ class YaHwinfo::Impl {
     };
     return cpu;
   }
-  std::vector<GPU> getGPU() { return {}; }
+  GPU getGPU() {
+    YaGPU ya_gpu;
+    GPU gpu{
+        .serial_number = ya_gpu.getSerialNumber(),
+        .manufacturer = ya_gpu.getManufacturer(),
+        .name = ya_gpu.getName(),
+    };
+    return gpu;
+  }
   std::vector<MEMORY> getMEMORY() { return {}; }
   OS getOS() {
     YaOS ya_os;
@@ -42,7 +50,10 @@ class YaHwinfo::Impl {
     };
     return os;
   }
-  std::vector<DISK> getDISK() { return {}; }
+  std::vector<DISK> getDISK() {
+    YaDISK ya_disk;
+    return ya_disk.getDISK();
+  }
   MOTHERBOARD getMOTHERBOARD() {
     YaMOTHERBOARD ya_motherboard;
     MOTHERBOARD motherboard{
@@ -66,7 +77,7 @@ BIOS YaHwinfo::getBIOS() { return m_impl->getBIOS(); }
 
 CPU YaHwinfo::getCPU() { return m_impl->getCPU(); }
 
-std::vector<GPU> YaHwinfo::getGPU() { return m_impl->getGPU(); }
+GPU YaHwinfo::getGPU() { return m_impl->getGPU(); }
 
 std::vector<MEMORY> YaHwinfo::getMEMORY() { return m_impl->getMEMORY(); }
 

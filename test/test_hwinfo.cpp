@@ -34,6 +34,38 @@ TEST(HwinfoTest, CPU) {
             << std::endl;
 }
 
+TEST(HwinfoTest, DISK) {
+  YaHwinfo info;
+  auto disk = info.getDISK();
+  for (int i = 0; i < disk.size(); ++i) {
+    std::cout << std::format(
+                     "DISK_{}:\n"
+                     "name:          {}\n"
+                     "manufacturer:  {}\n"
+                     "serial_number: {}\n",
+                     i, disk[i].name, disk[i].manufacturer,
+                     disk[i].serial_number)
+              << std::endl;
+  }
+}
+
+TEST(HwinfoTest, GPU) {
+  YaHwinfo info;
+  auto gpu = info.getGPU();
+  std::cout << std::format(
+                   "GPU:\n"
+                   "name:          {}\n"
+                   "manufacturer:  {}\n"
+                   "serial_number: {}\n",
+                   gpu.name, gpu.manufacturer, gpu.serial_number)
+            << std::endl;
+}
+
+TEST(HwinfoTest, MEMORY) {
+  YaHwinfo info;
+  auto memory = info.getMEMORY();
+}
+
 TEST(HwinfoTest, MOTHERBOARD) {
   YaHwinfo info;
   auto motherboard = info.getMOTHERBOARD();
@@ -47,6 +79,11 @@ TEST(HwinfoTest, MOTHERBOARD) {
                    motherboard.name, motherboard.manufacturer,
                    motherboard.serial_number, motherboard.version)
             << std::endl;
+}
+
+TEST(HwinfoTest, NETWORK) {
+  YaHwinfo info;
+  auto network = info.getNETWORK();
 }
 
 TEST(HwinfoTest, OS) {
