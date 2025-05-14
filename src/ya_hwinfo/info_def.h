@@ -42,8 +42,9 @@ struct MOTHERBOARD {
 };
 
 struct NETWORK {
-  std::string serial_number;
-  std::string manufacturer;
+  std::string name;
+  std::string ipv4;
+  std::string mac;
 };
 
 struct OS {

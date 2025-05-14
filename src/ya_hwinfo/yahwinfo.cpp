@@ -59,7 +59,10 @@ class YaHwinfo::Impl {
     };
     return motherboard;
   }
-  std::vector<NETWORK> getNETWORK() { return {}; }
+  std::vector<NETWORK> getNETWORK() {
+    YaNETWORK ya_network;
+    return ya_network.getNETWORK();
+  }
 
  private:
 };

@@ -86,6 +86,15 @@ TEST(HwinfoTest, MOTHERBOARD) {
 TEST(HwinfoTest, NETWORK) {
   YaHwinfo info;
   auto network = info.getNETWORK();
+  for (int i = 0; i < network.size(); ++i) {
+    std::cout << std::format(
+                     "NETWORK_{}:\n"
+                     "name:          {}\n"
+                     "ipv4:          {}\n"
+                     "mac:           {}\n",
+                     i, network[i].name, network[i].ipv4, network[i].mac)
+              << std::endl;
+  }
 }
 
 TEST(HwinfoTest, OS) {
