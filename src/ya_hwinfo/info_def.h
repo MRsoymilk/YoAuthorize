@@ -34,7 +34,6 @@ struct MEMORY {
 struct MOTHERBOARD {
   std::string serial_number;
   std::string manufacturer;
-  std::string date;
   std::string version;
   std::string name;
 };
