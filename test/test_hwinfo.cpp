@@ -20,6 +20,20 @@ TEST(HwinfoTest, BIOS) {
             << std::endl;
 }
 
+TEST(HwinfoTest, CPU) {
+  YaHwinfo info;
+  auto cpu = info.getCPU();
+  std::cout << std::format(
+                   "CPU:\n"
+                   "name:          {}\n"
+                   "manufacturer:  {}\n"
+                   "serial_number: {}\n"
+                   "architecture:  {}\n",
+                   cpu.name, cpu.manufacturer, cpu.serial_number,
+                   cpu.architecture)
+            << std::endl;
+}
+
 TEST(HwinfoTest, MOTHERBOARD) {
   YaHwinfo info;
   auto motherboard = info.getMOTHERBOARD();

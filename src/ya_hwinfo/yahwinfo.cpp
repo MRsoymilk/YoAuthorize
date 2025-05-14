@@ -21,7 +21,16 @@ class YaHwinfo::Impl {
     };
     return bios;
   }
-  std::vector<CPU> getCPU() { return {}; }
+  CPU getCPU() {
+    YaCPU ya_cpu;
+    CPU cpu{
+        .serial_number = ya_cpu.getSerialNumber(),
+        .architecture = ya_cpu.getArchitecture(),
+        .manufacturer = ya_cpu.getManufacturer(),
+        .name = ya_cpu.getName(),
+    };
+    return cpu;
+  }
   std::vector<GPU> getGPU() { return {}; }
   std::vector<MEMORY> getMEMORY() { return {}; }
   std::vector<OS> getOS() { return {}; }
@@ -47,7 +56,7 @@ YaHwinfo::~YaHwinfo() {}
 
 BIOS YaHwinfo::getBIOS() { return m_impl->getBIOS(); }
 
-std::vector<CPU> YaHwinfo::getCPU() { return m_impl->getCPU(); }
+CPU YaHwinfo::getCPU() { return m_impl->getCPU(); }
 
 std::vector<GPU> YaHwinfo::getGPU() { return m_impl->getGPU(); }
 

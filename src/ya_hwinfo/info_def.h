@@ -14,6 +14,7 @@ struct CPU {
   std::string serial_number;
   std::string architecture;
   std::string manufacturer;
+  std::string name;
 };
 
 struct DISK {

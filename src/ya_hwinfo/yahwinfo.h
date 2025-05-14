@@ -11,7 +11,7 @@ class YaHwinfo {
   YaHwinfo();
   ~YaHwinfo();
   BIOS getBIOS();
-  std::vector<CPU> getCPU();
+  CPU getCPU();
   std::vector<GPU> getGPU();
   std::vector<MEMORY> getMEMORY();
   std::vector<OS> getOS();
