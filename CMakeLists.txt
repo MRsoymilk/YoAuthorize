@@ -14,7 +14,9 @@ if (MSVC)
     endforeach()
 endif()
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
@@ -36,6 +38,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ya_communicate)
 
 add_subdirectory(src/ya_json)
 target_link_libraries(${PROJECT_NAME} PRIVATE ya_json)
+
+add_subdirectory(src/ya_hwinfo)
+target_link_libraries(${PROJECT_NAME} PRIVATE ya_hwinfo)
+
+add_subdirectory(src/global)
+target_link_libraries(${PROJECT_NAME} PRIVATE global_headers)
 
 add_subdirectory(test)
 

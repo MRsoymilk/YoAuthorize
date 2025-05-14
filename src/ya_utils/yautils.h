@@ -1,7 +1,7 @@
 #ifndef YA_UTILS_H
+#define YA_UTILS_H
 
-#include <bits/chrono.h>
-
+#include <chrono>
 #include <map>
 #include <string>
 
@@ -29,6 +29,14 @@ class YaUtils {
    private:
     static std::map<std::string, std::chrono::steady_clock::time_point>
         m_timers;
+  };
+
+  class Platform {
+   public:
+    enum class PLATFORM { WINDOWS, LINUX, MACOS };
+
+   public:
+    static PLATFORM GetPlatform();
   };
 };
 

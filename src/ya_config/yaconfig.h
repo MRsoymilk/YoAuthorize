@@ -44,4 +44,4 @@ class YaConfig {
 
 #define YA_CONFIG YaConfig::instance()
 
-#endif  // YA_CONFIG_H
+#endif  // !YA_CONFIG_H

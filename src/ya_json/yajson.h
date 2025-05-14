@@ -1,4 +1,6 @@
-#pragma once
+#ifndef YA_JSON_H
+#define YA_JSON_H
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,3 +34,4 @@ class YaJson {
  private:
   std::unique_ptr<Impl> m_impl;
 };
+#endif  // !YA_JSON_H

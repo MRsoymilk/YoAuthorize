@@ -111,4 +111,4 @@ public:
 
 } // namespace ya
 
-#endif // YA_COMMUNICATE_H
+#endif  // !YA_COMMUNICATE_H

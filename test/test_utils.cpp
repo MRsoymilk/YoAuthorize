@@ -56,3 +56,21 @@ TEST(TimerTest, SleepAccuracy) {
   EXPECT_GE(elapsed_ms, 950);
   EXPECT_LE(elapsed_ms, 1100);
 }
+
+TEST(PlatformTest, Macro) {
+  auto platform = YaUtils::Platform::GetPlatform();
+  switch (platform) {
+    case YaUtils::Platform::PLATFORM::WINDOWS:
+      std::cout << "Platform: Windows" << std::endl;
+      break;
+    case YaUtils::Platform::PLATFORM::LINUX:
+      std::cout << "Platform: Linux" << std::endl;
+      break;
+    case YaUtils::Platform::PLATFORM::MACOS:
+      std::cout << "Platform: MACOS" << std::endl;
+      break;
+    default:
+      std::cout << "Unkndown" << std::endl;
+      break;
+  }
+}

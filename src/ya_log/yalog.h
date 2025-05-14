@@ -1,5 +1,5 @@
-#ifndef YALOG_H
-#define YALOG_H
+#ifndef YA_LOG_H
+#define YA_LOG_H
 
 #include <format>
 #include <memory>
@@ -46,4 +46,4 @@ class YaLog {
 #define LOG_ERROR(fmt, ...) YA_LOG.error(FORMAT_LOG(fmt, ##__VA_ARGS__))
 #define LOG_CRITICAL(fmt, ...) YA_LOG.critical(FORMAT_LOG(fmt, ##__VA_ARGS__))
 
-#endif  // YALOG_H
+#endif  // !YA_LOG_H

@@ -57,10 +57,19 @@ target_link_libraries(test_json PRIVATE
 )
 add_test(NAME TestJson COMMAND test_json)
 
+# ========================= test json =========================
+add_executable(test_hwinfo test_hwinfo.cpp)
+target_link_libraries(test_hwinfo PRIVATE
+  GTest::gtest
+  GTest::gtest_main
+  hwinfo
+)
+add_test(NAME TestHwinfo COMMAND test_hwinfo)
+
 include(GoogleTest)
 gtest_discover_tests(test_config)
 gtest_discover_tests(test_log)
 gtest_discover_tests(test_communicate)
 gtest_discover_tests(test_utils)
 gtest_discover_tests(test_json)
-
+gtest_discover_tests(test_hwinfo)
