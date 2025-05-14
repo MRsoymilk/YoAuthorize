@@ -62,7 +62,7 @@ add_executable(test_hwinfo test_hwinfo.cpp)
 target_link_libraries(test_hwinfo PRIVATE
   GTest::gtest
   GTest::gtest_main
-  hwinfo
+  ya_hwinfo
 )
 add_test(NAME TestHwinfo COMMAND test_hwinfo)
 

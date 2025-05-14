@@ -1,5 +1,6 @@
 #include "yahwinfo.h"
 
+#include "bios/yabios.h"
 #include "cpu/yacpu.h"
 #include "disk/yadisk.h"
 #include "gpu/yagpu.h"
@@ -10,6 +11,16 @@
 
 class YaHwinfo::Impl {
  public:
+  BIOS getBIOS() {
+    YaBIOS ya_bios;
+    BIOS bios{
+        .serial_number = ya_bios.getSerialNumber(),
+        .manufacturer = ya_bios.getManufacturer(),
+        .date = ya_bios.getDate(),
+        .version = ya_bios.getVersion(),
+    };
+    return bios;
+  }
   std::vector<CPU> getCPU() { return {}; }
   std::vector<GPU> getGPU() { return {}; }
   std::vector<MEMORY> getMEMORY() { return {}; }
@@ -20,6 +31,12 @@ class YaHwinfo::Impl {
 
  private:
 };
+
+YaHwinfo::YaHwinfo() { m_impl = std::make_unique<Impl>(); }
+
+YaHwinfo::~YaHwinfo() {}
+
+BIOS YaHwinfo::getBIOS() { return m_impl->getBIOS(); }
 
 std::vector<CPU> YaHwinfo::getCPU() { return m_impl->getCPU(); }
 

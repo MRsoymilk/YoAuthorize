@@ -21,5 +21,4 @@
   #define YA_UNIX
 #endif
 
-#endif  // !YA_PLATFORM_DEF_H
-
+#endif  // !PLATFORM_DEF_H

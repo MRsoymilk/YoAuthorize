@@ -21,4 +21,4 @@ add_library(ya_hwinfo STATIC
 )
 
 target_include_directories(ya_hwinfo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
+target_link_libraries(ya_hwinfo PUBLIC global_headers)

@@ -8,6 +8,9 @@
 
 class YaHwinfo {
  public:
+  YaHwinfo();
+  ~YaHwinfo();
+  BIOS getBIOS();
   std::vector<CPU> getCPU();
   std::vector<GPU> getGPU();
   std::vector<MEMORY> getMEMORY();
