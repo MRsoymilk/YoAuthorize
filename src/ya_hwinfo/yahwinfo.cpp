@@ -33,7 +33,15 @@ class YaHwinfo::Impl {
   }
   std::vector<GPU> getGPU() { return {}; }
   std::vector<MEMORY> getMEMORY() { return {}; }
-  OS getOS() { return {}; }
+  OS getOS() {
+    YaOS ya_os;
+    OS os{
+        .id = ya_os.getID(),
+        .name = ya_os.getName(),
+        .version = ya_os.getVersion(),
+    };
+    return os;
+  }
   std::vector<DISK> getDISK() { return {}; }
   MOTHERBOARD getMOTHERBOARD() {
     YaMOTHERBOARD ya_motherboard;

@@ -45,7 +45,7 @@ struct NETWORK {
 };
 
 struct OS {
-  std::string serial_number;
+  std::string id;
   std::string name;
   std::string version;
 };

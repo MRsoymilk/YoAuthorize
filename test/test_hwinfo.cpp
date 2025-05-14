@@ -48,3 +48,16 @@ TEST(HwinfoTest, MOTHERBOARD) {
                    motherboard.serial_number, motherboard.version)
             << std::endl;
 }
+
+TEST(HwinfoTest, OS) {
+  YaHwinfo info;
+  auto os = info.getOS();
+
+  std::cout << std::format(
+                   "OS:\n"
+                   "id:          {}\n"
+                   "name:        {}\n"
+                   "version:     {}\n",
+                   os.id, os.name, os.version)
+            << std::endl;
+}
