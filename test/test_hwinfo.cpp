@@ -66,6 +66,14 @@ TEST(HwinfoTest, GPU) {
 TEST(HwinfoTest, MEMORY) {
   YaHwinfo info;
   auto memory = info.getMEMORY();
+  for (int i = 0; i < memory.size(); ++i) {
+    std::cout << std::format(
+                     "MEMORY_{}:\n"
+                     "serial_number: {}\n"
+                     "manufacturer:  {}\n",
+                     i, memory[i].serial_number, memory[i].manufacturer)
+              << std::endl;
+  }
 }
 
 TEST(HwinfoTest, MOTHERBOARD) {

@@ -35,7 +35,10 @@ class YaHwinfo::Impl {
     YaGPU ya_gpu;
     return ya_gpu.getGPU();
   }
-  std::vector<MEMORY> getMEMORY() { return {}; }
+  std::vector<MEMORY> getMEMORY() {
+    YaMEMORY ya_memory;
+    return ya_memory.getMEMORY();
+  }
   OS getOS() {
     YaOS ya_os;
     OS os{
