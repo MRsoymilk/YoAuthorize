@@ -66,6 +66,17 @@ target_link_libraries(test_hwinfo PRIVATE
 )
 add_test(NAME TestHwinfo COMMAND test_hwinfo)
 
+# ========================= test sql =========================
+add_executable(test_sql test_sql.cpp)
+target_link_libraries(test_sql PRIVATE
+  GTest::gtest
+  GTest::gtest_main
+  GTest::gmock
+  ya_sqldriver
+  sqlite
+)
+add_test(NAME TestSql COMMAND test_sql)
+
 include(GoogleTest)
 gtest_discover_tests(test_config)
 gtest_discover_tests(test_log)
@@ -73,3 +84,4 @@ gtest_discover_tests(test_communicate)
 gtest_discover_tests(test_utils)
 gtest_discover_tests(test_json)
 gtest_discover_tests(test_hwinfo)
+

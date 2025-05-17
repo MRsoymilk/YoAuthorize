@@ -42,6 +42,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ya_json)
 add_subdirectory(src/ya_hwinfo)
 target_link_libraries(${PROJECT_NAME} PRIVATE ya_hwinfo)
 
+add_subdirectory(src/ya_sqldriver)
+target_link_libraries(${PROJECT_NAME} PRIVATE ya_sqldriver)
+
 add_subdirectory(src/global)
 target_link_libraries(${PROJECT_NAME} PRIVATE global_headers)
 
@@ -65,6 +68,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE gtest gtest_main)
 
 add_subdirectory(vendor/simdjson)
 target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
+
+add_subdirectory(vendor/sqlite-amalgamation)
+target_link_libraries(${PROJECT_NAME} PRIVATE sqlite3)
 
 # brpc
 # add_subdirectory(vendor/brpc)
