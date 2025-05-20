@@ -67,15 +67,25 @@ target_link_libraries(test_hwinfo PRIVATE
 add_test(NAME TestHwinfo COMMAND test_hwinfo)
 
 # ========================= test sql =========================
-add_executable(test_sql test_sql.cpp)
+add_executable(test_sql test_sqlite.cpp)
 target_link_libraries(test_sql PRIVATE
   GTest::gtest
   GTest::gtest_main
   GTest::gmock
   ya_sqldriver
-  sqlite
+  sqlite3
 )
 add_test(NAME TestSql COMMAND test_sql)
+
+add_executable(test_mysql test_mysql.cpp)
+target_link_libraries(test_mysql PRIVATE
+  GTest::gtest
+  GTest::gtest_main
+  GTest::gmock
+  ya_sqldriver
+  mysql::concpp
+)
+add_test(NAME TestMySQL COMMAND test_mysql)
 
 include(GoogleTest)
 gtest_discover_tests(test_config)

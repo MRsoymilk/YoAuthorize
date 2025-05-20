@@ -23,6 +23,18 @@ C++ 20
 - [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver)
 - [libpqxx](https://github.com/jtv/libpqxx)
 
+
+#### mysql-connector-cpp
+
+```bash
+cd vendor/mysql-connector-cpp
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=./ ../
+make -j7
+make install
+```
+
 git module add
 
 ```bash

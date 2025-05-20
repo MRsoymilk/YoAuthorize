@@ -72,6 +72,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
 add_subdirectory(vendor/sqlite-amalgamation)
 target_link_libraries(${PROJECT_NAME} PRIVATE sqlite3)
 
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/vendor/mysql-connector-cpp/build/")
+find_package(mysql-concpp REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE mysql::concpp)
+
 # brpc
 # add_subdirectory(vendor/brpc)
 # target_link_libraries(${PROJECT_NAME} PRIVATE brpc)
