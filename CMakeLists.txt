@@ -72,9 +72,22 @@ target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
 add_subdirectory(vendor/sqlite-amalgamation)
 target_link_libraries(${PROJECT_NAME} PRIVATE sqlite3)
 
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/vendor/mysql-connector-cpp/build/")
-find_package(mysql-concpp REQUIRED)
+find_package(mysql-concpp REQUIRED CONFIG
+  PATHS "${CMAKE_SOURCE_DIR}/vendor/mysql-connector-cpp/build"
+  NO_DEFAULT_PATH
+)
 target_link_libraries(${PROJECT_NAME} PRIVATE mysql::concpp)
+
+find_package(bsoncxx 4.1 REQUIRED CONFIG
+  PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/bsoncxx-4.1.0"
+  NO_DEFAULT_PATH
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE mongo::mongocxx_shared mongo::bsoncxx_shared)
+
+find_package(mongocxx 4.1 REQUIRED CONFIG
+  PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/mongocxx-4.1.0"
+  NO_DEFAULT_PATH
+)
 
 # brpc
 # add_subdirectory(vendor/brpc)

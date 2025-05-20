@@ -19,7 +19,6 @@ C++ 20
 ### driver
 
 - [mysql-connector-cpp](https://github.com/mysql/mysql-connector-cpp)
-- [SQLiteCpp](https://github.com/SRombauts/SQLiteCpp)
 - [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver)
 - [libpqxx](https://github.com/jtv/libpqxx)
 
@@ -30,7 +29,18 @@ C++ 20
 cd vendor/mysql-connector-cpp
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=./ ../
+cmake -DCMAKE_INSTALL_PREFIX=./ ../ # default is Debug
+make -j7
+make install
+```
+
+#### mongo-cxx-driver
+
+```bash
+cd vendor/mongo-cxx-driver
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=./ ../ -DCMAKE_BUILD_TYPE=Debug
 make -j7
 make install
 ```
