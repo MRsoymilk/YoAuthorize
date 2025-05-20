@@ -24,60 +24,77 @@ configure_file(
 )
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_subdirectory(src/ya_log)
-target_link_libraries(${PROJECT_NAME} PRIVATE ya_log)
-
-add_subdirectory(src/ya_utils)
-target_link_libraries(${PROJECT_NAME} PRIVATE ya_utils)
-
-add_subdirectory(src/ya_config)
-target_link_libraries(${PROJECT_NAME} PRIVATE ya_config)
-
-add_subdirectory(src/ya_communicate)
-target_link_libraries(${PROJECT_NAME} PRIVATE ya_communicate)
-
-add_subdirectory(src/ya_json)
-target_link_libraries(${PROJECT_NAME} PRIVATE ya_json)
-
-add_subdirectory(src/ya_hwinfo)
-target_link_libraries(${PROJECT_NAME} PRIVATE ya_hwinfo)
-
-add_subdirectory(src/ya_sqldriver)
-target_link_libraries(${PROJECT_NAME} PRIVATE ya_sqldriver)
-
 add_subdirectory(src/global)
 target_link_libraries(${PROJECT_NAME} PRIVATE global_headers)
 
-add_subdirectory(test)
+option(ENABLE_YA_LOG "Build ya_log module" OFF)
+option(ENABLE_YA_UTILS "Build ya_utils module" OFF)
+option(ENABLE_YA_CONFIG "Build ya_config module" OFF)
+option(ENABLE_YA_COMMUNICATE "Build ya_communicate module" OFF)
+option(ENABLE_YA_JSON "Build ya_json module" OFF)
+option(ENABLE_YA_HWINFO "Build ya_hwinfo module" OFF)
+option(ENABLE_YA_SQLDRIVER "Build ya_sqldriver module" OFF)
+option(ENABLE_TEST "Build test" OFF)
 
-# spdlog
-add_subdirectory(vendor/spdlog)
-target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
+if(ENABLE_YA_LOG)
+  add_subdirectory(src/ya_log)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_log)
+  # spdlog
+  add_subdirectory(vendor/spdlog)
+  target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
 
-# nng
-add_subdirectory(vendor/nng EXCLUDE_FROM_ALL)
-target_link_libraries(${PROJECT_NAME} PRIVATE nng)
+endif()
 
-# tomlplusplus
-add_subdirectory(vendor/tomlplusplus)
-target_link_libraries(${PROJECT_NAME} PRIVATE tomlplusplus::tomlplusplus)
+if(ENABLE_YA_UTILS)
+  add_subdirectory(src/ya_utils)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_utils)
+endif()
 
-# googletest
-add_subdirectory(vendor/gtest)
-target_link_libraries(${PROJECT_NAME} PRIVATE gtest gtest_main)
+if(ENABLE_YA_CONFIG)
+  add_subdirectory(src/ya_config)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_config)
+  # tomlplusplus
+  add_subdirectory(vendor/tomlplusplus)
+  target_link_libraries(${PROJECT_NAME} PRIVATE tomlplusplus::tomlplusplus)
+endif()
 
-add_subdirectory(vendor/simdjson)
-target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
+if(ENABLE_YA_COMMUNICATE)
+  add_subdirectory(src/ya_communicate)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_communicate)
+  # nng
+  add_subdirectory(vendor/nng EXCLUDE_FROM_ALL)
+  target_link_libraries(${PROJECT_NAME} PRIVATE nng)
+endif()
 
-add_subdirectory(vendor/sqlite-amalgamation)
-target_link_libraries(${PROJECT_NAME} PRIVATE sqlite3)
+if(ENABLE_YA_JSON)
+  add_subdirectory(src/ya_json)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_json)
+  # simdjson
+  add_subdirectory(vendor/simdjson)
+  target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
+endif()
 
-find_package(mysql-concpp REQUIRED CONFIG
-  PATHS "${CMAKE_SOURCE_DIR}/vendor/mysql-connector-cpp/build"
-  NO_DEFAULT_PATH
-)
+if(ENABLE_YA_HWINFO)
+  add_subdirectory(src/ya_hwinfo)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_hwinfo)
+endif()
+
+if(ENABLE_YA_SQLDRIVER)
+  add_subdirectory(src/ya_sqldriver)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_sqldriver)
+
+  # sql driver: sqlit
+  add_subdirectory(vendor/sqlite-amalgamation)
+  target_link_libraries(${PROJECT_NAME} PRIVATE sqlite3)
+
+  # sql driver: MySQL
+  find_package(mysql-concpp REQUIRED CONFIG
+    PATHS "${CMAKE_SOURCE_DIR}/vendor/mysql-connector-cpp/build"
+    NO_DEFAULT_PATH
+  )
 target_link_libraries(${PROJECT_NAME} PRIVATE mysql::concpp)
 
+# sql driver: MongoDB
 find_package(bsoncxx 4.1 REQUIRED CONFIG
   PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/bsoncxx-4.1.0"
   NO_DEFAULT_PATH
@@ -88,6 +105,14 @@ find_package(mongocxx 4.1 REQUIRED CONFIG
   PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/mongocxx-4.1.0"
   NO_DEFAULT_PATH
 )
+endif()
+
+if(ENABLE_TEST)
+  add_subdirectory(test)
+  # googletest
+  add_subdirectory(vendor/gtest)
+  target_link_libraries(${PROJECT_NAME} PRIVATE gtest gtest_main)
+endif()
 
 # brpc
 # add_subdirectory(vendor/brpc)
