@@ -2,6 +2,8 @@ add_library(ya_hwinfo STATIC
   info_def.h
   yahwinfo.h
   yahwinfo.cpp
+  hwinfooperator.h
+  hwinfooperator.cpp
   bios/yabios.h
   bios/yabios.cpp
   cpu/yacpu.h

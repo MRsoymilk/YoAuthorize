@@ -6,6 +6,9 @@
 #include <string>
 
 #include "platform_def.h"
+#if defined(YA_WINDOWS)
+#include "hwinfooperator.h"
+#endif
 
 YaMEMORY::YaMEMORY() { init(); }
 
@@ -14,6 +17,25 @@ YaMEMORY::~YaMEMORY() {}
 std::vector<MEMORY> YaMEMORY::getMEMORY() { return m_memories; }
 
 void YaMEMORY::init() {
+#if defined(YA_WINDOWS)
+  WmiQuery wmi;
+  if (wmi.initialize()) {
+    auto manufacturers = wmi.query(L"Win32_PhysicalMemory", L"Manufacturer");
+    auto serials = wmi.query(L"Win32_PhysicalMemory", L"SerialNumber");
+
+    size_t count = serials.size();
+    for (size_t i = 0; i < count; ++i) {
+      MEMORY memory;
+      if (i < manufacturers.size())
+        memory.manufacturer =
+            std::string(manufacturers[i].begin(), manufacturers[i].end());
+      if (i < serials.size())
+        memory.serial_number =
+            std::string(serials[i].begin(), serials[i].end());
+      m_memories.push_back(memory);
+    }
+  }
+#endif
 #if defined(YA_LINUX)
   namespace fs = std::filesystem;
 

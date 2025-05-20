@@ -1,9 +1,10 @@
 #include "yanetwork.h"
 
 #include "platform_def.h"
-
+#if defined(YA_WINDOWS)
+#include "hwinfooperator.h"
+#endif
 #if defined(YA_LINUX)
-
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if.h>
@@ -23,6 +24,42 @@ YaNETWORK::~YaNETWORK() {}
 std::vector<NETWORK> YaNETWORK::getNETWORK() { return m_networks; }
 
 void YaNETWORK::init() {
+#if defined(YA_WINDOWS)
+  m_networks.clear();
+
+  WmiQuery wmi;
+  if (wmi.initialize()) {
+    auto names = wmi.query(L"Win32_NetworkAdapter", L"Caption");
+    auto macs = wmi.query(L"Win32_NetworkAdapter", L"MACAddress");
+    auto ips = wmi.query(L"Win32_NetworkAdapterConfiguration", L"IPAddress");
+
+    size_t count = names.size();
+    for (size_t i = 0; i < count; ++i) {
+      if (names[i].empty()) {
+        continue;
+      }
+      NETWORK net;
+      if (!names[i].empty())
+        net.name = std::string(names[i].begin(), names[i].end());
+      if (!macs[i].empty())
+        net.mac = std::string(macs[i].begin(), macs[i].end());
+      if (!ips[i].empty()) {
+        // "{\"192.168.1.1\", \"fe80::abcd\"}"
+        std::wstring ipRaw = ips[i];
+        size_t start = ipRaw.find(L'"');
+        size_t end = ipRaw.find(L'"', start + 1);
+        if (start != std::wstring::npos && end != std::wstring::npos &&
+            end > start)
+          net.ipv4 =
+              std::string(ipRaw.begin() + start + 1, ipRaw.begin() + end);
+      }
+
+      if (!net.name.empty() || !net.mac.empty() || !net.ipv4.empty()) {
+        m_networks.push_back(std::move(net));
+      }
+    }
+  }
+#endif
 #if defined(YA_LINUX)
   m_networks.clear();
 

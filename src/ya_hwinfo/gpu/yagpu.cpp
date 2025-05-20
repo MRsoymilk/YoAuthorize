@@ -4,6 +4,9 @@
 #include <fstream>
 
 #include "platform_def.h"
+#if defined(YA_WINDOWS)
+#include "hwinfooperator.h"
+#endif
 
 YaGPU::YaGPU() { init(); }
 
@@ -12,6 +15,23 @@ YaGPU::~YaGPU() {}
 std::vector<GPU> YaGPU::getGPU() { return m_gpus; }
 
 void YaGPU::init() {
+#if defined(YA_WINDOWS)
+  WmiQuery wmi;
+  if (wmi.initialize()) {
+    auto names = wmi.query(L"Win32_VideoController", L"Name");
+    auto vendors = wmi.query(L"Win32_VideoController", L"AdapterCompatibility");
+    auto device_ids = wmi.query(L"Win32_VideoController", L"PNPDeviceID");
+
+    size_t count = names.size();
+    for (size_t i = 0; i < count; ++i) {
+      GPU gpu;
+      gpu.name = std::string(names[i].begin(), names[i].end());
+      gpu.manufacturer = std::string(vendors[i].begin(), vendors[i].end());
+      gpu.serial_number = std::string(device_ids[i].begin(), device_ids[i].end());
+      m_gpus.push_back(gpu);
+    }
+  }
+#endif
 #if defined(YA_LINUX)
   namespace fs = std::filesystem;
   std::string base_path = "/sys/class/drm";

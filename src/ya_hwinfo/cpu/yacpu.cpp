@@ -3,7 +3,9 @@
 #include <fstream>
 
 #include "platform_def.h"
-
+#if defined(YA_WINDOWS)
+#include "hwinfooperator.h"
+#endif
 #if defined(YA_LINUX)
 #include <sys/utsname.h>
 #endif
@@ -21,6 +23,47 @@ std::string YaCPU::getManufacturer() { return m_cpu.manufacturer; }
 std::string YaCPU::getName() { return m_cpu.name; }
 
 void YaCPU::init() {
+#if defined(YA_WINDOWS)
+  WmiQuery wmi;
+  if (wmi.initialize()) {
+    auto serials = wmi.query(L"Win32_Processor", L"ProcessorId");
+    if (!serials.empty()) {
+      m_cpu.serial_number = std::string(serials[0].begin(), serials[0].end());
+    }
+
+    auto names = wmi.query(L"Win32_Processor", L"Name");
+    if (!names.empty()) {
+      m_cpu.name = std::string(names[0].begin(), names[0].end());
+    }
+
+    auto vendors = wmi.query(L"Win32_Processor", L"Manufacturer");
+    if (!vendors.empty()) {
+      m_cpu.manufacturer = std::string(vendors[0].begin(), vendors[0].end());
+    }
+
+    auto archs = wmi.query(L"Win32_Processor", L"Architecture");
+    if (!archs.empty()) {
+      int archCode = std::stoi(std::wstring(archs[0]));
+      switch (archCode) {
+        case 0:
+          m_cpu.architecture = "x86";
+          break;
+        case 9:
+          m_cpu.architecture = "x64";
+          break;
+        case 5:
+          m_cpu.architecture = "ARM";
+          break;
+        case 12:
+          m_cpu.architecture = "ARM64";
+          break;
+        default:
+          m_cpu.architecture = "Unknown";
+          break;
+      }
+    }
+  }
+#endif
 #if defined(YA_LINUX)
   // /proc/cpuinfo
 

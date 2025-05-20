@@ -5,6 +5,9 @@
 #include <set>
 
 #include "platform_def.h"
+#if defined(YA_WINDOWS)
+#include "hwinfooperator.h"
+#endif
 
 YaDISK::YaDISK() { init(); }
 
@@ -13,6 +16,23 @@ YaDISK::~YaDISK() {}
 std::vector<DISK> YaDISK::getDISK() { return m_disks; }
 
 void YaDISK::init() {
+#if defined(YA_WINDOWS)
+  WmiQuery wmi;
+  if (wmi.initialize()) {
+    auto names = wmi.query(L"Win32_DiskDrive", L"DeviceID");
+    auto serials = wmi.query(L"Win32_DiskDrive", L"SerialNumber");
+    auto models = wmi.query(L"Win32_DiskDrive", L"Model");
+
+    size_t count = names.size();
+    for (size_t i = 0; i < count; ++i) {
+      DISK d;
+      d.name = std::string(names[i].begin(), names[i].end());
+      d.serial_number = std::string(serials[i].begin(), serials[i].end());
+      d.manufacturer = std::string(models[i].begin(), models[i].end());
+      m_disks.push_back(d);
+    }
+  }
+#endif
 #if defined(YA_LINUX)
   namespace fs = std::filesystem;
   std::string base_path = "/sys/block/";
