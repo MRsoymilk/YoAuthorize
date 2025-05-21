@@ -1,3 +1,5 @@
+#include "platform_def.h"
+#if defined(YA_WINDOWS)
 #include <Wbemidl.h>
 #include <Windows.h>
 #include <comdef.h>
@@ -23,3 +25,4 @@ class WmiQuery {
 
   void cleanup();
 };
+#endif

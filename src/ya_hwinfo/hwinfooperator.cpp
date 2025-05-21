@@ -1,4 +1,5 @@
 #include "hwinfooperator.h"
+#if defined(YA_WINDOWS)
 #include <sstream>
 
 WmiQuery::WmiQuery() {}
@@ -135,3 +136,4 @@ void WmiQuery::cleanup() {
   CoUninitialize();
   initialized = false;
 }
+#endif
