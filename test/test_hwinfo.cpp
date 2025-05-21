@@ -99,8 +99,9 @@ TEST(HwinfoTest, NETWORK) {
                      "NETWORK_{}:\n"
                      "name:          {}\n"
                      "ipv4:          {}\n"
+                     "ipv6:          {}\n"
                      "mac:           {}\n",
-                     i, network[i].name, network[i].ipv4, network[i].mac)
+                     i, network[i].name, network[i].ipv4, network[i].ipv6, network[i].mac)
               << std::endl;
   }
 }

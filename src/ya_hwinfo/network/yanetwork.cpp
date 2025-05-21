@@ -46,15 +46,24 @@ void YaNETWORK::init() {
       if (!ips[i].empty()) {
         // "{\"192.168.1.1\", \"fe80::abcd\"}"
         std::wstring ipRaw = ips[i];
-        size_t start = ipRaw.find(L'"');
-        size_t end = ipRaw.find(L'"', start + 1);
-        if (start != std::wstring::npos && end != std::wstring::npos &&
-            end > start)
-          net.ipv4 =
-              std::string(ipRaw.begin() + start + 1, ipRaw.begin() + end);
+
+        size_t first_quote = ipRaw.find(L'"');
+        size_t second_quote = ipRaw.find(L'"', first_quote + 1);
+        size_t third_quote = ipRaw.find(L'"', second_quote + 1);
+        size_t fourth_quote = ipRaw.find(L'"', third_quote + 1);
+
+        if (first_quote != std::wstring::npos &&
+            second_quote != std::wstring::npos &&
+            third_quote != std::wstring::npos &&
+            fourth_quote != std::wstring::npos) {
+          net.ipv4 = std::string(ipRaw.begin() + first_quote + 1,
+                                 ipRaw.begin() + second_quote);
+          net.ipv6 = std::string(ipRaw.begin() + third_quote + 1,
+                                 ipRaw.begin() + fourth_quote);
+        }
       }
 
-      if (!net.name.empty() || !net.mac.empty() || !net.ipv4.empty()) {
+      if (!net.name.empty() || !net.mac.empty() || !net.ipv4.empty() || !net.ipv6.empty()) {
         m_networks.push_back(std::move(net));
       }
     }

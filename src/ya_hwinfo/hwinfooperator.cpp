@@ -1,4 +1,5 @@
 #include "hwinfooperator.h"
+#include <sstream>
 
 WmiQuery::WmiQuery() {}
 
@@ -62,6 +63,36 @@ std::vector<std::wstring> WmiQuery::query(const std::wstring& wmiClass,
       std::wstring value;
 
       switch (vtProp.vt) {
+        case VT_ARRAY | VT_BSTR: {
+          LONG lbound, ubound;
+          if (FAILED(SafeArrayGetLBound(vtProp.parray, 1, &lbound)) ||
+              FAILED(SafeArrayGetUBound(vtProp.parray, 1, &ubound))) {
+            break;
+          }
+
+          std::wstringstream ss;
+          ss << L"{";
+
+          bool first = true;
+          for (LONG i = lbound; i <= ubound; ++i) {
+            BSTR bstr = nullptr;
+            if (FAILED(SafeArrayGetElement(vtProp.parray, &i, &bstr)) ||
+                bstr == nullptr)
+              continue;
+
+            std::wstring ws(bstr, SysStringLen(bstr));
+            SysFreeString(bstr);
+
+            if (!first) {
+              ss << L", ";
+            }
+            ss << L"\"" << ws << L"\"";
+            first = false;
+          }
+
+          ss << L"}";
+          value = ss.str();
+        } break;
         case VT_BSTR:
           value = vtProp.bstrVal;
           break;

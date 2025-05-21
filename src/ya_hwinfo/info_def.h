@@ -44,6 +44,7 @@ struct MOTHERBOARD {
 struct NETWORK {
   std::string name;
   std::string ipv4;
+  std::string ipv6;
   std::string mac;
 };
 
