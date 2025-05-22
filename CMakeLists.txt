@@ -34,7 +34,9 @@ option(ENABLE_YA_COMMUNICATE "Build ya_communicate module" OFF)
 option(ENABLE_YA_JSON "Build ya_json module" OFF)
 option(ENABLE_YA_HWINFO "Build ya_hwinfo module" OFF)
 option(ENABLE_YA_SQLDRIVER "Build ya_sqldriver module" OFF)
+option(ENABLE_YA_SHELL "Build ya_shell module" OFF)
 option(ENABLE_TEST "Build test" OFF)
+
 
 if(ENABLE_YA_LOG)
   add_subdirectory(src/ya_log)
@@ -105,6 +107,11 @@ find_package(mongocxx 4.1 REQUIRED CONFIG
   PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/mongocxx-4.1.0"
   NO_DEFAULT_PATH
 )
+endif()
+
+if(ENABLE_YA_SHELL)
+  add_subdirectory(src/ya_shell)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_shell)
 endif()
 
 if(ENABLE_TEST)
