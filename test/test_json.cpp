@@ -21,14 +21,14 @@ const std::string json_str = R"(
 )";
 
 TEST(YaJsonTest, BasicFields) {
-  YaJson json(json_str);
+  ya::YaJson json(json_str);
 
   EXPECT_EQ(json.getString("text"),
             "RT @PostGradProblem: In preparation for the NFL lockout...");
   EXPECT_EQ(json.getInt("neg"), -999);
   EXPECT_DOUBLE_EQ(json.getDouble("pi"), 3.1415926);
 
-  YaJson user = json.getObject("user");
+  ya::YaJson user = json.getObject("user");
   EXPECT_EQ(user.getString("profile_image_url"),
             "http://a1.twimg.com/profile_images/455128973/"
             "gCsVUnofNqqyd6tdOGevROvko1_500_normal.jpg");

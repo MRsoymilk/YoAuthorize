@@ -5,6 +5,8 @@
 #include <map>
 #include <string>
 
+namespace ya {
+
 class YaUtils {
  public:
   class Exe {
@@ -39,5 +41,7 @@ class YaUtils {
     static PLATFORM GetPlatform();
   };
 };
+
+}  // namespace ya
 
 #endif  // !YA_UTILS_H

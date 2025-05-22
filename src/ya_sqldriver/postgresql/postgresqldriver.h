@@ -3,6 +3,8 @@
 
 #include "isqldriver.h"
 
+namespace ya {
+
 class PostgresqlDriver : public ISqlDriver {
  public:
   PostgresqlDriver();
@@ -19,5 +21,7 @@ class PostgresqlDriver : public ISqlDriver {
   std::vector<std::map<std::string, std::string> > query(
       const std::string &sql);
 };
+
+}  // namespace ya
 
 #endif  // !POSTGRESQL_DRIVER

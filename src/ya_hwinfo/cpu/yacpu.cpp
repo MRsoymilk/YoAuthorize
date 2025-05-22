@@ -10,6 +10,8 @@
 #include <sys/utsname.h>
 #endif
 
+namespace ya {
+
 YaCPU::YaCPU() { init(); }
 
 YaCPU::~YaCPU() {}
@@ -104,3 +106,5 @@ void YaCPU::init() {
   }
 #endif
 }
+
+}  // namespace ya

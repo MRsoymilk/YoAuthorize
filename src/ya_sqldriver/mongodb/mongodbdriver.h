@@ -3,6 +3,8 @@
 
 #include "isqldriver.h"
 
+namespace ya {
+
 class MongodbDriver : public ISqlDriver {
  public:
   MongodbDriver();
@@ -19,5 +21,7 @@ class MongodbDriver : public ISqlDriver {
   std::vector<std::map<std::string, std::string> > query(
       const std::string &sql);
 };
+
+}  // namespace ya
 
 #endif  // !MONGODB_DRIVER_H

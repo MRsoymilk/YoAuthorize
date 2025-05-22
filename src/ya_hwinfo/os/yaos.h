@@ -3,6 +3,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaOS {
  public:
   YaOS();
@@ -17,5 +19,7 @@ class YaOS {
  private:
   OS m_os;
 };
+
+}  // namespace ya
 
 #endif  // !YA_OS_H

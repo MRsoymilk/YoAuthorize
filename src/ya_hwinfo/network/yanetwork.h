@@ -5,6 +5,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaNETWORK {
  public:
   YaNETWORK();
@@ -17,5 +19,7 @@ class YaNETWORK {
  private:
   std::vector<NETWORK> m_networks;
 };
+
+}  // namespace ya
 
 #endif  // !YA_NETWORK_H

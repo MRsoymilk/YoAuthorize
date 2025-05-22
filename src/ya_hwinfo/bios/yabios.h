@@ -3,6 +3,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaBIOS {
  public:
   YaBIOS();
@@ -18,5 +20,7 @@ class YaBIOS {
  private:
   BIOS m_bios;
 };
+
+}  // namespace ya
 
 #endif  // !YA_BIOS_H

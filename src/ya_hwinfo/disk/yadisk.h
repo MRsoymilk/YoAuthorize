@@ -5,6 +5,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaDISK {
  public:
   YaDISK();
@@ -17,5 +19,7 @@ class YaDISK {
  private:
   std::vector<DISK> m_disks;
 };
+
+}  // namespace ya
 
 #endif  // !YA_DISK_H

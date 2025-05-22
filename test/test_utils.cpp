@@ -10,44 +10,44 @@ class ExeUtilsTest : public ::testing::Test {
   void SetUp() override {
     // simulate
     const char* argv0 = "./test_app";
-    YaUtils::Exe::ProcessArgs(1, const_cast<char**>(&argv0));
+    ya::YaUtils::Exe::ProcessArgs(1, const_cast<char**>(&argv0));
   }
 };
 
 TEST_F(ExeUtilsTest, ExePathValid) {
-  std::string path = YaUtils::Exe::GetExePath();
+  std::string path = ya::YaUtils::Exe::GetExePath();
   EXPECT_FALSE(path.empty());
   std::cout << "Exe Path: " << path << std::endl;
 }
 
 TEST_F(ExeUtilsTest, ExeNameValid) {
-  std::string name = YaUtils::Exe::GetExeName();
+  std::string name = ya::YaUtils::Exe::GetExeName();
   EXPECT_FALSE(name.empty());
   std::cout << std::format("App Name: {}", name) << std::endl;
 }
 
 TEST_F(ExeUtilsTest, ExeDirValid) {
-  std::string dir = YaUtils::Exe::GetExeDir();
+  std::string dir = ya::YaUtils::Exe::GetExeDir();
   EXPECT_FALSE(dir.empty());
   std::cout << std::format("App Dir: {}", dir) << std::endl;
 }
 
 TEST_F(ExeUtilsTest, FullPathConsistent) {
-  std::string path = YaUtils::Exe::GetExePath();
-  std::string dir = YaUtils::Exe::GetExeDir();
-  std::string name = YaUtils::Exe::GetExeName();
+  std::string path = ya::YaUtils::Exe::GetExePath();
+  std::string dir = ya::YaUtils::Exe::GetExeDir();
+  std::string name = ya::YaUtils::Exe::GetExeName();
   EXPECT_TRUE(path.find(dir) != std::string::npos);
   EXPECT_TRUE(path.find(name) != std::string::npos);
   std::cout << std::format("Full Path: {}", path) << std::endl;
 }
 
 TEST(TimerTest, SleepAccuracy) {
-  YaUtils::Timer::StartTimer();
-  YaUtils::Timer::Sleep(1000);  // sleep 1 second
+  ya::YaUtils::Timer::StartTimer();
+  ya::YaUtils::Timer::Sleep(1000);  // sleep 1 second
 
-  int64_t elapsed_us = YaUtils::Timer::GetElapsedTime_μs();
-  int64_t elapsed_ms = YaUtils::Timer::GetElapsedTime_ms();
-  double elapsed_s = YaUtils::Timer::GetElapsedTime_s();
+  int64_t elapsed_us = ya::YaUtils::Timer::GetElapsedTime_μs();
+  int64_t elapsed_ms = ya::YaUtils::Timer::GetElapsedTime_ms();
+  double elapsed_s = ya::YaUtils::Timer::GetElapsedTime_s();
 
   std::cout << std::format("Elapsed: {} μs", elapsed_us) << std::endl;
   std::cout << std::format("Elapsed: {} ms", elapsed_ms) << std::endl;
@@ -58,15 +58,15 @@ TEST(TimerTest, SleepAccuracy) {
 }
 
 TEST(PlatformTest, Macro) {
-  auto platform = YaUtils::Platform::GetPlatform();
+  auto platform = ya::YaUtils::Platform::GetPlatform();
   switch (platform) {
-    case YaUtils::Platform::PLATFORM::WINDOWS:
+    case ya::YaUtils::Platform::PLATFORM::WINDOWS:
       std::cout << "Platform: Windows" << std::endl;
       break;
-    case YaUtils::Platform::PLATFORM::LINUX:
+    case ya::YaUtils::Platform::PLATFORM::LINUX:
       std::cout << "Platform: Linux" << std::endl;
       break;
-    case YaUtils::Platform::PLATFORM::MACOS:
+    case ya::YaUtils::Platform::PLATFORM::MACOS:
       std::cout << "Platform: MACOS" << std::endl;
       break;
     default:

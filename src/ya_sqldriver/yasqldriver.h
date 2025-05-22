@@ -7,6 +7,8 @@
 
 #include "isqldriver.h"
 
+namespace ya {
+
 class YaSqlDriver {
  public:
   bool loadDriver(const std::string& yype);
@@ -23,5 +25,7 @@ class YaSqlDriver {
  private:
   std::unique_ptr<ISqlDriver> m_driver;
 };
+
+}  // namespace ya
 
 #endif  // !YA_SQLDRIVER_H

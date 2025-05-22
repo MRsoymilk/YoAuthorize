@@ -3,6 +3,8 @@
 #include <iostream>
 #include <sstream>
 
+namespace ya {
+
 YaShell::YaShell() : m_running(true) {}
 
 YaShell::~YaShell() {}
@@ -55,3 +57,5 @@ void YaShell::run() {
     executeCommand(tokens);
   }
 }
+
+}  // namespace ya

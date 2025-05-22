@@ -6,6 +6,8 @@
 #include <variant>
 #include <vector>
 
+namespace ya {
+
 using YaVariant = std::variant<int, double, std::string, bool>;
 
 class YaConfig {
@@ -42,6 +44,8 @@ class YaConfig {
   YaConfig& operator=(const YaConfig&) = delete;
 };
 
-#define YA_CONFIG YaConfig::instance()
+}  // namespace ya
+
+#define YA_CONFIG ya::YaConfig::instance()
 
 #endif  // !YA_CONFIG_H

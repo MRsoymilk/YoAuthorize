@@ -5,6 +5,8 @@
 #include "postgresql/postgresqldriver.h"
 #include "sqlite/sqlitedriver.h"
 
+namespace ya {
+
 bool YaSqlDriver::loadDriver(const std::string& dbType) {
     if (dbType == "sqlite") {
       m_driver = std::make_unique<SQLiteDriver>();
@@ -43,3 +45,4 @@ std::vector<std::map<std::string, std::string>> YaSqlDriver::query(const std::st
     return {};
 }
 
+}  // namespace ya

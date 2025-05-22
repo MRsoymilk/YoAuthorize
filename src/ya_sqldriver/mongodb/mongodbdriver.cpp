@@ -1,5 +1,7 @@
 #include "mongodbdriver.h"
 
+namespace ya {
+
 MongodbDriver::MongodbDriver() {}
 
 MongodbDriver::~MongodbDriver() {}
@@ -28,3 +30,5 @@ std::vector<std::map<std::string, std::string> > MongodbDriver::query(
     const std::string &sql) {
   return {};
 }
+
+}  // namespace ya

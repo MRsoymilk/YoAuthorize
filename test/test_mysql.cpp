@@ -14,7 +14,7 @@ class YaSqlMysqlTest : public ::testing::Test {
     driver.query("CREATE TABLE users (name VARCHAR(100), age INT)");
   }
 
-  YaSqlDriver driver;
+  ya::YaSqlDriver driver;
 };
 
 TEST_F(YaSqlMysqlTest, InsertAndQuery) {

@@ -16,6 +16,8 @@
     }                                                             \
   }
 
+namespace ya {
+
 class YaLog::Impl {
  public:
   std::shared_ptr<spdlog::logger> s_logger;
@@ -82,3 +84,5 @@ void YaLog::warn(const std::string &msg) { pImpl->warn(msg); }
 void YaLog::error(const std::string &msg) { pImpl->error(msg); }
 
 void YaLog::critical(const std::string &msg) { pImpl->critical(msg); }
+
+}  // namespace ya

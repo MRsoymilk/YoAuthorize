@@ -3,6 +3,9 @@
 #include <vector>
 
 #include "info_def.h"
+
+namespace ya {
+
 class YaMEMORY {
  public:
   YaMEMORY();
@@ -16,5 +19,7 @@ class YaMEMORY {
  private:
   std::vector<MEMORY> m_memories;
 };
+
+}  // namespace ya
 
 #endif  // !YA_MEMORY_H

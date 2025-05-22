@@ -5,7 +5,7 @@
 #include "yasqldriver.h"
 
 // Mock ISqlDriver for testing YaSqlDriver without SQLite
-class MockSqlDriver : public ISqlDriver {
+class MockSqlDriver : public ya::ISqlDriver {
  public:
   MOCK_METHOD1(connect, bool(const std::string&));
   MOCK_METHOD2(insert, bool(const std::string&,
@@ -31,27 +31,27 @@ class YaSqlDriverTest : public ::testing::Test {
     EXPECT_TRUE(result.empty()) << "Failed to create table";
   }
 
-  YaSqlDriver driver;
+  ya::YaSqlDriver driver;
 };
 
 TEST_F(YaSqlDriverTest, LoadDriverSQLite) {
-  YaSqlDriver new_driver;
+  ya::YaSqlDriver new_driver;
   EXPECT_TRUE(new_driver.loadDriver("sqlite"));
 }
 
 TEST_F(YaSqlDriverTest, LoadDriverInvalid) {
-  YaSqlDriver new_driver;
+  ya::YaSqlDriver new_driver;
   EXPECT_FALSE(new_driver.loadDriver("invalid_driver"));
 }
 
 TEST_F(YaSqlDriverTest, ConnectSuccess) {
-  YaSqlDriver new_driver;
+  ya::YaSqlDriver new_driver;
   ASSERT_TRUE(new_driver.loadDriver("sqlite"));
   EXPECT_TRUE(new_driver.connect(":memory:"));
 }
 
 TEST_F(YaSqlDriverTest, ConnectWithoutDriver) {
-  YaSqlDriver new_driver;
+  ya::YaSqlDriver new_driver;
   EXPECT_FALSE(new_driver.connect(":memory:"))
       << "Should fail without loaded driver";
 }
@@ -108,12 +108,12 @@ TEST_F(YaSqlDriverTest, QueryMultipleRows) {
 
 // Mock-based test for delegation
 TEST(YaSqlDriverMockTest, DelegatesToDriver) {
-  YaSqlDriver driver;
+  ya::YaSqlDriver driver;
   auto mock_driver = std::make_unique<MockSqlDriver>();
   MockSqlDriver* mock_ptr = mock_driver.get();
 
   // Simulate loading a mock driver (bypassing loadDriver)
-  driver = YaSqlDriver();  // Reset driver
+  driver = ya::YaSqlDriver();  // Reset driver
   // Note: We need a way to inject the mock; this assumes a setter or loadDriver
   // supports mocks For simplicity, we'll test delegation directly
 

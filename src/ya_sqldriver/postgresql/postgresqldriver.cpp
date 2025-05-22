@@ -1,5 +1,7 @@
 #include "postgresqldriver.h"
 
+namespace ya {
+
 PostgresqlDriver::PostgresqlDriver() {}
 
 PostgresqlDriver::~PostgresqlDriver() {}
@@ -26,3 +28,5 @@ std::vector<std::map<std::string, std::string> > PostgresqlDriver::query(
     const std::string &sql) {
   return {};
 }
+
+}  // namespace ya

@@ -3,6 +3,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaMOTHERBOARD {
  public:
   YaMOTHERBOARD();
@@ -18,5 +20,7 @@ class YaMOTHERBOARD {
  private:
   MOTHERBOARD m_motherboard;
 };
+
+}  // namespace ya
 
 #endif  // !YA_MOTHERBOARD_H

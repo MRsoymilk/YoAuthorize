@@ -7,6 +7,8 @@
 #include "hwinfooperator.h"
 #endif
 
+namespace ya {
+
 YaMOTHERBOARD::YaMOTHERBOARD() { init(); }
 
 YaMOTHERBOARD::~YaMOTHERBOARD() {}
@@ -83,3 +85,5 @@ void YaMOTHERBOARD::init() {
   }
 #endif
 }
+
+}  // namespace ya

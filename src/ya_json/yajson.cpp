@@ -2,6 +2,8 @@
 
 #include <simdjson.h>
 
+namespace ya {
+
 class YaJson::Impl {
  public:
   Impl() = default;
@@ -156,3 +158,5 @@ YaJson& YaJson::operator=(YaJson&& other) noexcept {
   }
   return *this;
 }
+
+}  // namespace ya

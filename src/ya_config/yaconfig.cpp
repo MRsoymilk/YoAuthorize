@@ -4,6 +4,8 @@
 #include <iostream>
 #include <toml++/toml.hpp>
 
+namespace ya {
+
 class YaConfig::Impl {
  public:
   toml::table config;
@@ -189,3 +191,5 @@ std::string YaConfig::toYaml() const { return m_impl->toYaml(); }
 std::vector<YaVariant> YaConfig::getArrayVariant(const std::string& key) {
   return m_impl->getArrayVariant(key);
 }
+
+}  // namespace ya

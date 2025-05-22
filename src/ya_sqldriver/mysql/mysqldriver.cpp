@@ -4,6 +4,8 @@
 
 #include <memory>
 
+namespace ya {
+
 class MysqlDriver::Impl {
  public:
   Impl() : session(nullptr) {}
@@ -162,3 +164,5 @@ std::vector<std::map<std::string, std::string>> MysqlDriver::query(
     const std::string &sql) {
   return pimpl->query(sql);
 }
+
+}  // namespace ya

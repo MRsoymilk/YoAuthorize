@@ -5,6 +5,8 @@
 #include <memory>
 #include <string>
 
+namespace ya {
+
 class YaLog {
  public:
   static YaLog &instance();
@@ -28,7 +30,9 @@ class YaLog {
   YaLog &operator=(const YaLog &) = delete;
 };
 
-#define YA_LOG YaLog::instance()
+}  // namespace ya
+
+#define YA_LOG ya::YaLog::instance()
 
 #define FORMAT_LOG(fmt, ...)                           \
   [&]() -> std::string {                               \

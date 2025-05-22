@@ -6,6 +6,8 @@
 
 #include "sqlite3.h"
 
+namespace ya {
+
 SQLiteDriver::SQLiteDriver() : db(nullptr) {}
 
 SQLiteDriver::~SQLiteDriver() {
@@ -147,3 +149,5 @@ std::vector<std::map<std::string, std::string>> SQLiteDriver::query(
   sqlite3_finalize(stmt);
   return results;
 }
+
+}  // namespace ya

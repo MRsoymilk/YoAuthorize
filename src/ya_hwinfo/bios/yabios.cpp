@@ -7,6 +7,8 @@
 #include "hwinfooperator.h"
 #endif
 
+namespace ya {
+
 YaBIOS::YaBIOS() { init(); }
 
 YaBIOS::~YaBIOS() {}
@@ -78,3 +80,5 @@ void YaBIOS::init() {
   }
 #endif
 }
+
+}  // namespace ya

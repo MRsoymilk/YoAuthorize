@@ -5,6 +5,8 @@
 
 #include "isqldriver.h"
 
+namespace ya {
+
 class MysqlDriver : public ISqlDriver {
  public:
   MysqlDriver();
@@ -25,5 +27,7 @@ class MysqlDriver : public ISqlDriver {
   class Impl;
   std::unique_ptr<Impl> pimpl;
 };
+
+}  // namespace ya
 
 #endif  // !MYSQL_DRIVER_H

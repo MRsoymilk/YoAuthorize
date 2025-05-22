@@ -1,4 +1,7 @@
 #include "hwinfooperator.h"
+
+namespace ya {
+
 #if defined(YA_WINDOWS)
 #include <sstream>
 
@@ -137,3 +140,5 @@ void WmiQuery::cleanup() {
   initialized = false;
 }
 #endif
+
+}  // namespace ya

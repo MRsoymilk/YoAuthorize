@@ -5,6 +5,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaGPU {
  public:
   YaGPU();
@@ -18,5 +20,7 @@ class YaGPU {
  private:
   std::vector<GPU> m_gpus;
 };
+
+}  // namespace ya
 
 #endif  // !YA_GPU_H

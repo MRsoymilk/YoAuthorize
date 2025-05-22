@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace ya {
+
 class YaJson {
  private:
   class Impl;
@@ -34,4 +36,7 @@ class YaJson {
  private:
   std::unique_ptr<Impl> m_impl;
 };
+
+}  // namespace ya
+
 #endif  // !YA_JSON_H

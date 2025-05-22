@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace ya {
+
 class YaShell {
  public:
   YaShell();
@@ -17,5 +19,7 @@ class YaShell {
  private:
   bool m_running;
 };
+
+}  // namespace ya
 
 #endif  // !YA_SHELL_H

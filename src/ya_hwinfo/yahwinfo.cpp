@@ -9,6 +9,8 @@
 #include "network/yanetwork.h"
 #include "os/yaos.h"
 
+namespace ya {
+
 class YaHwinfo::Impl {
  public:
   BIOS getBIOS() {
@@ -89,3 +91,5 @@ std::vector<DISK> YaHwinfo::getDISK() { return m_impl->getDISK(); }
 MOTHERBOARD YaHwinfo::getMOTHERBOARD() { return m_impl->getMOTHERBOARD(); }
 
 std::vector<NETWORK> YaHwinfo::getNETWORK() { return m_impl->getNETWORK(); }
+
+}  // namespace ya

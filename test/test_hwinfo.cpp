@@ -1,12 +1,11 @@
 #include <gtest/gtest.h>
 
 #include <format>
-#include <string>
 
 #include "yahwinfo.h"
 
 TEST(HwinfoTest, BIOS) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto bios = info.getBIOS();
 
   std::cout << std::format(
@@ -21,7 +20,7 @@ TEST(HwinfoTest, BIOS) {
 }
 
 TEST(HwinfoTest, CPU) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto cpu = info.getCPU();
   std::cout << std::format(
                    "CPU:\n"
@@ -35,7 +34,7 @@ TEST(HwinfoTest, CPU) {
 }
 
 TEST(HwinfoTest, DISK) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto disk = info.getDISK();
   for (int i = 0; i < disk.size(); ++i) {
     std::cout << std::format(
@@ -50,7 +49,7 @@ TEST(HwinfoTest, DISK) {
 }
 
 TEST(HwinfoTest, GPU) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto gpu = info.getGPU();
   for (int i = 0; i < gpu.size(); ++i) {
     std::cout << std::format(
@@ -64,7 +63,7 @@ TEST(HwinfoTest, GPU) {
 }
 
 TEST(HwinfoTest, MEMORY) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto memory = info.getMEMORY();
   for (int i = 0; i < memory.size(); ++i) {
     std::cout << std::format(
@@ -77,7 +76,7 @@ TEST(HwinfoTest, MEMORY) {
 }
 
 TEST(HwinfoTest, MOTHERBOARD) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto motherboard = info.getMOTHERBOARD();
 
   std::cout << std::format(
@@ -92,7 +91,7 @@ TEST(HwinfoTest, MOTHERBOARD) {
 }
 
 TEST(HwinfoTest, NETWORK) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto network = info.getNETWORK();
   for (int i = 0; i < network.size(); ++i) {
     std::cout << std::format(
@@ -107,7 +106,7 @@ TEST(HwinfoTest, NETWORK) {
 }
 
 TEST(HwinfoTest, OS) {
-  YaHwinfo info;
+  ya::YaHwinfo info;
   auto os = info.getOS();
 
   std::cout << std::format(

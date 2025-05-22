@@ -3,6 +3,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaCPU {
  public:
   YaCPU();
@@ -19,5 +21,7 @@ class YaCPU {
  private:
   CPU m_cpu;
 };
+
+}  // namespace ya
 
 #endif  // YACPU_H

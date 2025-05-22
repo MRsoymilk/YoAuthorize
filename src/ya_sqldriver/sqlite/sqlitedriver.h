@@ -3,6 +3,8 @@
 
 #include "isqldriver.h"
 
+namespace ya {
+
 class SQLiteDriver : public ISqlDriver {
  public:
   SQLiteDriver();
@@ -22,5 +24,7 @@ class SQLiteDriver : public ISqlDriver {
  private:
   void* db;  // sqlite3*
 };
+
+}  // namespace ya
 
 #endif  // !SQLITE_DRIVER

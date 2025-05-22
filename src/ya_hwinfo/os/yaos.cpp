@@ -10,6 +10,8 @@
 #include <sys/utsname.h>
 #endif
 
+namespace ya {
+
 YaOS::YaOS() { init(); }
 
 YaOS::~YaOS() {}
@@ -72,3 +74,5 @@ void YaOS::init() {
 
 #endif
 }
+
+}  // namespace ya

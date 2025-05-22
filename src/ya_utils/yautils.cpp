@@ -5,6 +5,7 @@
 #include <map>
 #include <thread>
 #include <vector>
+namespace ya {
 
 std::string YaUtils::Exe::m_exe_name = "";
 std::map<std::string, std::chrono::steady_clock::time_point>
@@ -67,3 +68,5 @@ YaUtils::Platform::PLATFORM YaUtils::Platform::GetPlatform() {
 #error "Unsupported platform"
 #endif
 }
+
+}  // namespace ya

@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+namespace ya {
+
 YaNETWORK::YaNETWORK() { init(); }
 
 YaNETWORK::~YaNETWORK() {}
@@ -129,3 +131,5 @@ void YaNETWORK::init() {
   freeifaddrs(ifaddr);
 #endif
 }
+
+}  // namespace ya

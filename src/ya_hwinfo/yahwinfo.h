@@ -6,6 +6,8 @@
 
 #include "info_def.h"
 
+namespace ya {
+
 class YaHwinfo {
  public:
   YaHwinfo();
@@ -23,5 +25,7 @@ class YaHwinfo {
   class Impl;
   std::unique_ptr<Impl> m_impl;
 };
+
+}  // namespace ya
 
 #endif  // !YA_HWINFO_H

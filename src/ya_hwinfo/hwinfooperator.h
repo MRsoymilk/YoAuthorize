@@ -1,4 +1,7 @@
 #include "platform_def.h"
+
+namespace ya {
+
 #if defined(YA_WINDOWS)
 #include <Wbemidl.h>
 #include <Windows.h>
@@ -26,3 +29,5 @@ class WmiQuery {
   void cleanup();
 };
 #endif
+
+}  // namespace ya

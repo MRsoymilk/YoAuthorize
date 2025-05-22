@@ -10,6 +10,8 @@
 #include "hwinfooperator.h"
 #endif
 
+namespace ya {
+
 YaMEMORY::YaMEMORY() { init(); }
 
 YaMEMORY::~YaMEMORY() {}
@@ -88,3 +90,5 @@ void YaMEMORY::init() {
   }
 #endif
 }
+
+}  // namespace ya

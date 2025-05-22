@@ -3,6 +3,8 @@
 
 #include <string>
 
+namespace ya {
+
 struct BIOS {
   std::string serial_number;
   std::string manufacturer;
@@ -53,5 +55,7 @@ struct OS {
   std::string name;
   std::string version;
 };
+
+}  // namespace ya
 
 #endif  // !INFO_DEF_H

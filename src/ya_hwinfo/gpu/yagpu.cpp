@@ -8,6 +8,8 @@
 #include "hwinfooperator.h"
 #endif
 
+namespace ya {
+
 YaGPU::YaGPU() { init(); }
 
 YaGPU::~YaGPU() {}
@@ -74,3 +76,5 @@ void YaGPU::init() {
   }
 #endif
 }
+
+}  // namespace ya

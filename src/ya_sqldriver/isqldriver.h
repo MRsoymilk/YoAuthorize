@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace ya {
+
 class ISqlDriver {
  public:
   virtual ~ISqlDriver() = default;
@@ -19,5 +21,7 @@ class ISqlDriver {
   virtual std::vector<std::map<std::string, std::string>> query(
       const std::string& sql) = 0;
 };
+
+}  // namespace ya
 
 #endif  // !I_SQL_DRIVER_H

@@ -9,6 +9,8 @@
 #include "hwinfooperator.h"
 #endif
 
+namespace ya {
+
 YaDISK::YaDISK() { init(); }
 
 YaDISK::~YaDISK() {}
@@ -70,3 +72,5 @@ void YaDISK::init() {
   }
 #endif
 }
+
+}  // namespace ya
