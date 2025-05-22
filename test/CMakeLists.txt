@@ -10,16 +10,17 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 include(GoogleTest)
 
-option(ENABLE_TEST_CONFIG "Test ya_config module" OFF)
-option(ENABLE_TEST_LOG "Test ya_log module" OFF)
-option(ENABLE_TEST_COMMUNICATE "Test ya_communicate module" OFF)
-option(ENABLE_TEST_UTILS "Test ya_utils module" OFF)
-option(ENABLE_TEST_JSON "Test ya_json module" OFF)
-option(ENABLE_TEST_HWINFO "Test ya_hwinfo module" OFF)
-option(ENABLE_TEST_SQL "Test ya_sql module" OFF)
+option(ENABLE_TEST_YA_CONFIG "Test ya_config module" OFF)
+option(ENABLE_TEST_YA_LOG "Test ya_log module" OFF)
+option(ENABLE_TEST_YA_COMMUNICATE "Test ya_communicate module" OFF)
+option(ENABLE_TEST_YA_UTILS "Test ya_utils module" OFF)
+option(ENABLE_TEST_YA_JSON "Test ya_json module" OFF)
+option(ENABLE_TEST_YA_HWINFO "Test ya_hwinfo module" OFF)
+option(ENABLE_TEST_YA_SQL "Test ya_sql module" OFF)
+option(ENABLE_TEST_YA_SHELL "Test ya_shell module" OFF)
 
-# ========================= test config =========================
-if(ENABLE_TEST_CONFIG)
+# ========================= test ya config =========================
+if(ENABLE_TEST_YA_CONFIG)
   add_executable(test_config test_config.cpp)
   target_link_libraries(test_config PRIVATE
     GTest::gtest
@@ -32,8 +33,8 @@ if(ENABLE_TEST_CONFIG)
 
 endif()
 
-# ========================= test log =========================
-if(ENABLE_TEST_LOG)
+# ========================= test ya log =========================
+if(ENABLE_TEST_YA_LOG)
   add_executable(test_log test_log.cpp)
   target_link_libraries(test_log PRIVATE
     GTest::gtest
@@ -45,8 +46,8 @@ if(ENABLE_TEST_LOG)
   gtest_discover_tests(test_log)
 endif()
 
-# ========================= test communicate =========================
-if(ENABLE_TEST_COMMUNICATE)
+# ========================= test ya communicate =========================
+if(ENABLE_TEST_YA_COMMUNICATE)
   add_executable(test_communicate test_communicate.cpp)
   target_link_libraries(test_communicate PRIVATE
     GTest::gtest
@@ -58,8 +59,8 @@ if(ENABLE_TEST_COMMUNICATE)
   gtest_discover_tests(test_communicate)
 endif()
 
-# ========================= test utils =========================
-if(ENABLE_TEST_UTILS)
+# ========================= test ya utils =========================
+if(ENABLE_TEST_YA_UTILS)
   add_executable(test_utils test_utils.cpp)
   target_link_libraries(test_utils PRIVATE
     GTest::gtest
@@ -70,8 +71,8 @@ if(ENABLE_TEST_UTILS)
   gtest_discover_tests(test_utils)
 endif()
 
-# ========================= test json =========================
-if(ENABLE_TEST_JSON)
+# ========================= test ya json =========================
+if(ENABLE_TEST_YA_JSON)
   add_executable(test_json test_json.cpp)
   target_link_libraries(test_json PRIVATE
     GTest::gtest
@@ -83,8 +84,8 @@ if(ENABLE_TEST_JSON)
   gtest_discover_tests(test_json)
 endif()
 
-# ========================= test hwinfo =========================
-if(ENABLE_TEST_HWINFO)
+# ========================= test ya hwinfo =========================
+if(ENABLE_TEST_YA_HWINFO)
   add_executable(test_hwinfo test_hwinfo.cpp)
   target_link_libraries(test_hwinfo PRIVATE
     GTest::gtest
@@ -95,8 +96,8 @@ if(ENABLE_TEST_HWINFO)
   gtest_discover_tests(test_hwinfo)
 endif()
 
-# ========================= test sql =========================
-if(ENABLE_TEST_SQL)
+# ========================= test ya sql =========================
+if(ENABLE_TEST_YA_SQL)
   add_executable(test_sqlite test_sqlite.cpp)
   target_link_libraries(test_sqlite PRIVATE
     GTest::gtest
@@ -105,7 +106,7 @@ if(ENABLE_TEST_SQL)
     ya_sqldriver
     sqlite3
   )
-  add_test(NAME TestSqlite COMMAND test_sqllite)
+  add_test(NAME TestSqlite COMMAND test_sqlite)
   gtest_discover_tests(test_sqlite)
 
   add_executable(test_mysql test_mysql.cpp)
@@ -118,4 +119,16 @@ if(ENABLE_TEST_SQL)
   )
   add_test(NAME TestMySQL COMMAND test_mysql)
   gtest_discover_tests(test_mysql)
+endif()
+
+# ========================= test ya shell =========================
+if(ENABLE_TEST_YA_SHELL)
+  add_executable(test_shell test_shell.cpp)
+  target_link_libraries(test_shell PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    ya_shell
+  )
+  add_test(NAME TestShell COMMAND test_shell)
+  gtest_discover_tests(test_shell)
 endif()

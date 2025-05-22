@@ -35,7 +35,7 @@ option(ENABLE_YA_JSON "Build ya_json module" OFF)
 option(ENABLE_YA_HWINFO "Build ya_hwinfo module" OFF)
 option(ENABLE_YA_SQLDRIVER "Build ya_sqldriver module" OFF)
 option(ENABLE_YA_SHELL "Build ya_shell module" OFF)
-option(ENABLE_TEST "Build test" OFF)
+option(ENABLE_YA_TEST "Build test" OFF)
 
 
 if(ENABLE_YA_LOG)
@@ -114,7 +114,7 @@ if(ENABLE_YA_SHELL)
   target_link_libraries(${PROJECT_NAME} PRIVATE ya_shell)
 endif()
 
-if(ENABLE_TEST)
+if(ENABLE_YA_TEST)
   add_subdirectory(test)
   # googletest
   add_subdirectory(vendor/gtest)

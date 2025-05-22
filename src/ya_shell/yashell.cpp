@@ -5,7 +5,8 @@
 
 namespace ya {
 
-YaShell::YaShell() : m_running(true) {}
+YaShell::YaShell(std::istream& in, std::ostream& out)
+    : m_running(true), m_in(in), m_out(out) {}
 
 YaShell::~YaShell() {}
 
@@ -27,30 +28,30 @@ void YaShell::executeCommand(const std::vector<std::string>& tokens) {
   const std::string& cmd = tokens[0];
 
   if (cmd == "q" || cmd == "quit" || cmd == "exit") {
-    std::cout << "bye..." << std::endl;
+    m_out << "bye..." << std::endl;
     m_running = false;
   } else if (cmd == "echo") {
     for (size_t i = 1; i < tokens.size(); ++i) {
-      std::cout << tokens[i] << " ";
+      m_out << tokens[i] << " ";
     }
-    std::cout << std::endl;
+    m_out << std::endl;
   } else if (cmd == "help") {
-    std::cout << "ya-net" << std::endl;
-    std::cout << "Usage:\n"
-              << "  help        Print help\n"
-              << "  echo [args] print args\n"
-              << "  exit/quit   Exit shell\n";
+    m_out << "ya-net\n"
+          << "Usage:\n"
+          << "  help        Print help\n"
+          << "  echo [args] print args\n"
+          << "  exit/quit   Exit shell\n";
   } else {
-    std::cout << "Unknown: " << cmd << "\n";
+    m_out << "Unknown: " << cmd << "\n";
   }
 }
 
 void YaShell::run() {
   std::string line;
   while (m_running) {
-    std::cout << "ya-net> " << std::flush;
-    if (!std::getline(std::cin, line)) {
-      std::cout << "\nExit." << std::endl;
+    m_out << "ya-net> " << std::flush;
+    if (!std::getline(m_in, line)) {
+      m_out << "\nExit." << std::endl;
       break;
     }
     auto tokens = parseCommand(line);
