@@ -5,124 +5,135 @@
 #include <nng/protocol/pubsub0/sub.h>
 #include <nng/protocol/reqrep0/rep.h>
 #include <nng/protocol/reqrep0/req.h>
+#include <nng/supplemental/http/http.h>
 #include <nng/supplemental/tls/tls.h>
 
 #include <cstring>
 #include <map>
-#include <sstream>
-#include <thread>
 #include <mutex>
+#include <sstream>
+#include <stop_token>
+#include <thread>
 
 namespace ya {
 
-YaCommunicate::Server::Server(const std::string& url) : socket(nullptr), listener(nullptr) {
-    nng_socket s;
-    nng_listener l;
-    int rv;
+YaCommunicate::Server::Server(const std::string& url)
+    : m_socket(nullptr), m_listener(nullptr) {
+  nng_socket s;
+  nng_listener l;
+  int rv;
 
-    if ((rv = nng_rep0_open(&s)) != 0) {
-        throw CommException("Failed to open server socket: " + std::string(nng_strerror(rv)));
-    }
+  if ((rv = nng_rep0_open(&s)) != 0) {
+    throw CommException("Failed to open server socket: " +
+                        std::string(nng_strerror(rv)));
+  }
 
-    if ((rv = nng_listen(s, url.c_str(), &l, 0)) != 0) {
-        nng_close(s);
-        throw CommException("Failed to listen on " + url + ": " +
-                            std::string(nng_strerror(rv)));
-    }
+  if ((rv = nng_listen(s, url.c_str(), &l, 0)) != 0) {
+    nng_close(s);
+    throw CommException("Failed to listen on " + url + ": " +
+                        std::string(nng_strerror(rv)));
+  }
 
-    socket = new nng_socket(s); // Store socket
-    listener = new nng_listener(l); // Store listener
+  m_socket = new nng_socket(s);      // Store socket
+  m_listener = new nng_listener(l);  // Store listener
 }
 
 YaCommunicate::Server::~Server() {
-    if (listener) {
-        nng_listener_close(*(nng_listener*)listener);
-        delete (nng_listener*)listener;
-    }
-    if (socket) {
-        nng_close(*(nng_socket*)socket);
-        delete (nng_socket*)socket;
-    }
+  if (m_listener) {
+    nng_listener_close(*(nng_listener*)m_listener);
+    delete (nng_listener*)m_listener;
+  }
+  if (m_socket) {
+    nng_close(*(nng_socket*)m_socket);
+    delete (nng_socket*)m_socket;
+  }
 }
 
 std::string YaCommunicate::Server::receive() {
-    char* buf = nullptr;
-    size_t sz;
-    int rv;
+  char* buf = nullptr;
+  size_t sz;
+  int rv;
 
-    if ((rv = nng_recv(*(nng_socket*)socket, &buf, &sz, NNG_FLAG_ALLOC)) != 0) {
-        throw CommException("Failed to receive: " + std::string(nng_strerror(rv)));
-    }
+  if ((rv = nng_recv(*(nng_socket*)m_socket, &buf, &sz, NNG_FLAG_ALLOC)) != 0) {
+    throw CommException("Failed to receive: " + std::string(nng_strerror(rv)));
+  }
 
-    std::string msg(buf, sz - 1); // Exclude null terminator
-    nng_free(buf, sz); // Free buffer
-    return msg;
+  std::string msg(buf, sz - 1);  // Exclude null terminator
+  nng_free(buf, sz);             // Free buffer
+  return msg;
 }
 
 void YaCommunicate::Server::send(const std::string& msg) {
-    int rv;
-    // Copy string to include null terminator
-    char* buf = new char[msg.size() + 1];
-    std::strcpy(buf, msg.c_str());
+  int rv;
+  // Copy string to include null terminator
+  char* buf = new char[msg.size() + 1];
+  std::strcpy(buf, msg.c_str());
 
-    if ((rv = nng_send(*(nng_socket*)socket, buf, msg.size() + 1, NNG_FLAG_ALLOC)) != 0) {
-        delete[] buf; // Free if send fails
-        throw CommException("Failed to send: " + std::string(nng_strerror(rv)));
-    }
-    // NNG_FLAG_ALLOC means NNG frees buf
+  if ((rv = nng_send(*(nng_socket*)m_socket, buf, msg.size() + 1,
+                     NNG_FLAG_ALLOC)) != 0) {
+    delete[] buf;  // Free if send fails
+    throw CommException("Failed to send: " + std::string(nng_strerror(rv)));
+  }
+  // NNG_FLAG_ALLOC means NNG frees buf
 }
 
-YaCommunicate::Client::Client(const std::string& url) : socket(nullptr), dialer(nullptr) {
-    nng_socket s;
-    nng_dialer d;
-    int rv;
+YaCommunicate::Client::Client(const std::string& url)
+    : m_socket(nullptr), m_dialer(nullptr) {
+  nng_socket s;
+  nng_dialer d;
+  int rv;
 
-    if ((rv = nng_req0_open(&s)) != 0) {
-        throw CommException("Failed to open client socket: " + std::string(nng_strerror(rv)));
-    }
+  if ((rv = nng_req0_open(&s)) != 0) {
+    throw CommException("Failed to open client socket: " +
+                        std::string(nng_strerror(rv)));
+  }
 
-    if ((rv = nng_dial(s, url.c_str(), &d, 0)) != 0) {
-        nng_close(s);
-        throw CommException("Failed to dial " + url + ": " +
-                            std::string(nng_strerror(rv)));
-    }
+  if ((rv = nng_dial(s, url.c_str(), &d, 0)) != 0) {
+    nng_close(s);
+    throw CommException("Failed to dial " + url + ": " +
+                        std::string(nng_strerror(rv)));
+  }
 
-    socket = new nng_socket(s);
-    dialer = new nng_dialer(d);
+  m_socket = new nng_socket(s);
+  m_dialer = new nng_dialer(d);
 }
 
 YaCommunicate::Client::~Client() {
-    if (dialer) {
-        nng_dialer_close(*(nng_dialer*)dialer);
-        delete (nng_dialer*)dialer;
-    }
-    if (socket) {
-        nng_close(*(nng_socket*)socket);
-        delete (nng_socket*)socket;
-    }
+  if (m_dialer) {
+    nng_dialer_close(*(nng_dialer*)m_dialer);
+    delete (nng_dialer*)m_dialer;
+  }
+  if (m_socket) {
+    nng_close(*(nng_socket*)m_socket);
+    delete (nng_socket*)m_socket;
+  }
 }
 
 std::string YaCommunicate::Client::request(const std::string& msg) {
-    int rv;
-    // Send request
-    char* send_buf = new char[msg.size() + 1];
-    std::strcpy(send_buf, msg.c_str());
+  int rv;
+  // Send request
+  char* send_buf = new char[msg.size() + 1];
+  std::strcpy(send_buf, msg.c_str());
 
-    if ((rv = nng_send(*(nng_socket*)socket, send_buf, msg.size() + 1, NNG_FLAG_ALLOC)) != 0) {
-        delete[] send_buf;
-        throw CommException("Failed to send request: " + std::string(nng_strerror(rv)));
-    }
+  if ((rv = nng_send(*(nng_socket*)m_socket, send_buf, msg.size() + 1,
+                     NNG_FLAG_ALLOC)) != 0) {
+    delete[] send_buf;
+    throw CommException("Failed to send request: " +
+                        std::string(nng_strerror(rv)));
+  }
 
-    // Receive reply
-    char* recv_buf = nullptr;
-    size_t sz;
-    if ((rv = nng_recv(*(nng_socket*)socket, &recv_buf, &sz, NNG_FLAG_ALLOC)) != 0) {
-        throw CommException("Failed to receive reply: " + std::string(nng_strerror(rv)));
-    }
+  // Receive reply
+  char* recv_buf = nullptr;
+  size_t sz;
+  if ((rv = nng_recv(*(nng_socket*)m_socket, &recv_buf, &sz, NNG_FLAG_ALLOC)) !=
+      0) {
+    throw CommException("Failed to receive reply: " +
+                        std::string(nng_strerror(rv)));
+  }
 
-    std::string reply(recv_buf, sz - 1);
-    nng_free(recv_buf, sz);
-    return reply;
+  std::string reply(recv_buf, sz - 1);
+  nng_free(recv_buf, sz);
+  return reply;
 }
 
 std::string YaCommunicate::NodeStatus::to_string() const {
@@ -244,7 +255,9 @@ class YaCommunicate::P2PNode::Impl {
   }
 
   void stop() {
-    if (!m_running) return;
+    if (!m_running) {
+      return;
+    }
 
     m_running = false;
     nng_listener_close(m_server_listener);
@@ -263,6 +276,7 @@ class YaCommunicate::P2PNode::Impl {
     if (m_node_manager_thread.joinable()) {
       m_node_manager_thread.join();
     }
+    stop_http_server();
   }
 
   NodeStatus get_local_status() const {
@@ -339,7 +353,151 @@ class YaCommunicate::P2PNode::Impl {
     return urls;
   }
 
+  void start_http_server(int port) {
+    if (m_http_running) {
+      throw CommException("HTTP server is already running");
+    }
+
+    std::string addr = "http://0.0.0.0:" + std::to_string(port);
+    nng_url* url = nullptr;
+
+    // Parse URL
+    if (nng_url_parse(&url, addr.c_str()) != 0) {
+      throw CommException("Failed to parse HTTP URL: " + addr);
+    }
+
+    // Allocate HTTP server
+    if (nng_http_server_hold(&m_http_server, url) != 0) {
+      nng_url_free(url);
+      throw CommException("Failed to create HTTP server");
+    }
+
+    // Configure TLS if cert_file and key_file were provided
+    if (!m_cert_file.empty() && !m_key_file.empty()) {
+      nng_tls_config* tls_config;
+      if ((m_rv = nng_tls_config_alloc(&tls_config, NNG_TLS_MODE_SERVER)) !=
+          0) {
+        nng_http_server_release(m_http_server);
+        nng_url_free(url);
+        throw CommException("Failed to allocate TLS config for HTTP");
+      }
+      if ((m_rv = nng_tls_config_own_cert(tls_config, m_cert_file.c_str(),
+                                          m_key_file.c_str(), nullptr)) != 0) {
+        nng_tls_config_free(tls_config);
+        nng_http_server_release(m_http_server);
+        nng_url_free(url);
+        throw CommException("Failed to load TLS cert for HTTP");
+      }
+      if ((m_rv = nng_http_server_set_tls(m_http_server, tls_config)) != 0) {
+        nng_tls_config_free(tls_config);
+        nng_http_server_release(m_http_server);
+        nng_url_free(url);
+        throw CommException("Failed to set TLS config for HTTP");
+      }
+    }
+
+    // Allocate handler for /status
+    if (nng_http_handler_alloc(&m_http_handler_status, "/status",
+                               handle_status_request) != 0) {
+      nng_http_server_release(m_http_server);
+      nng_url_free(url);
+      throw CommException("Failed to create HTTP status handler");
+    }
+    nng_http_handler_set_method(m_http_handler_status, "GET");
+    nng_http_handler_set_data(m_http_handler_status, this, nullptr);
+    if (nng_http_server_add_handler(m_http_server, m_http_handler_status) !=
+        0) {
+      nng_http_handler_free(m_http_handler_status);
+      nng_http_server_release(m_http_server);
+      nng_url_free(url);
+      throw CommException("Failed to add HTTP status handler");
+    }
+
+    // Allocate handler for /nodes
+    if (nng_http_handler_alloc(&m_http_handler_nodes, "/nodes",
+                               handle_nodes_request) != 0) {
+      nng_http_handler_free(m_http_handler_status);
+      nng_http_server_release(m_http_server);
+      nng_url_free(url);
+      throw CommException("Failed to create HTTP nodes handler");
+    }
+    nng_http_handler_set_method(m_http_handler_nodes, "GET");
+    nng_http_handler_set_data(m_http_handler_nodes, this, nullptr);
+    if (nng_http_server_add_handler(m_http_server, m_http_handler_nodes) != 0) {
+      nng_http_handler_free(m_http_handler_status);
+      nng_http_handler_free(m_http_handler_nodes);
+      nng_http_server_release(m_http_server);
+      nng_url_free(url);
+      throw CommException("Failed to add HTTP nodes handler");
+    }
+
+    // Start the server
+    if (nng_http_server_start(m_http_server) != 0) {
+      nng_http_handler_free(m_http_handler_status);
+      nng_http_handler_free(m_http_handler_nodes);
+      nng_http_server_release(m_http_server);
+      nng_url_free(url);
+      throw CommException("Failed to start HTTP server");
+    }
+
+    nng_url_free(url);
+  }
+
+  void stop_http_server() {
+    if (!m_http_running) return;
+
+    m_http_running = false;
+    if (m_http_server) {
+      nng_http_server_stop(m_http_server);
+      nng_http_server_release(m_http_server);
+    }
+    if (m_http_handler_status) {
+      nng_http_handler_free(m_http_handler_status);
+    }
+    if (m_http_handler_nodes) {
+      nng_http_handler_free(m_http_handler_nodes);
+    }
+    m_http_server = nullptr;
+    m_http_handler_status = nullptr;
+    m_http_handler_nodes = nullptr;
+
+    if (m_http_thread.joinable()) {
+      m_http_thread.join();
+    }
+  }
+
  private:
+  static void handle_status_request(nng_aio* aio) {
+    auto* req = static_cast<nng_http_req*>(nng_aio_get_input(aio, 0));
+    nng_http_res* res = nullptr;
+    if (nng_http_res_alloc(&res) != 0) {
+      nng_aio_finish(aio, NNG_ENOMEM);
+      return;
+    }
+
+    const char* body = "{\"status\": \"ok\"}";
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
+    nng_http_res_set_header(res, "Content-Type", "application/json");
+    nng_http_res_copy_data(res, body, strlen(body));
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+  }
+
+  static void handle_nodes_request(nng_aio* aio) {
+    auto* req = static_cast<nng_http_req*>(nng_aio_get_input(aio, 0));
+    nng_http_res* res = nullptr;
+    if (nng_http_res_alloc(&res) != 0) {
+      nng_aio_finish(aio, NNG_ENOMEM);
+      return;
+    }
+    std::string response = "{}";
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
+    nng_http_res_set_header(res, "Content-Type", "application/json");
+    nng_http_res_copy_data(res, response.c_str(), response.size());
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+  }
+
   void run_server() {
     while (m_running) {
       char* buf = nullptr;
@@ -499,6 +657,14 @@ class YaCommunicate::P2PNode::Impl {
   std::atomic<bool> m_running;
   std::chrono::steady_clock::time_point m_start_time;
   int m_rv;
+
+  std::string m_cert_file;
+  std::string m_key_file;
+  nng_http_server* m_http_server;
+  nng_http_handler* m_http_handler_status;
+  nng_http_handler* m_http_handler_nodes;
+  std::thread m_http_thread;
+  std::atomic<bool> m_http_running;
 };
 
 YaCommunicate::P2PNode::P2PNode(const std::string& id,
@@ -507,7 +673,7 @@ YaCommunicate::P2PNode::P2PNode(const std::string& id,
                                 const std::string& cert_file,
                                 const std::string& key_file)
     : m_impl(std::make_unique<Impl>(id, listen_url, broadcast_url, cert_file,
-                                   key_file)) {}
+                                    key_file)) {}
 
 YaCommunicate::P2PNode::~P2PNode() = default;
 
@@ -528,8 +694,10 @@ std::vector<std::string> YaCommunicate::P2PNode::get_known_nodes() const {
   return m_impl->get_known_nodes();
 }
 
-void YaCommunicate::P2PNode::start_http_server(int port) {}
+void YaCommunicate::P2PNode::start_http_server(int port) {
+  m_impl->start_http_server(port);
+}
 
-void YaCommunicate::P2PNode::stop_http_server() {}
+void YaCommunicate::P2PNode::stop_http_server() { m_impl->stop_http_server(); }
 
-} // namespace ya
+}  // namespace ya

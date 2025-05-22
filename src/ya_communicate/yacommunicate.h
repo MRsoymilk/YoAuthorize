@@ -86,8 +86,8 @@ public:
         Server& operator=(const Server&) = delete;
 
     private:
-        void* socket; // Opaque pointer to NNG socket
-        void* listener; // Opaque pointer to NNG listener
+     void* m_socket;    // Opaque pointer to NNG socket
+     void* m_listener;  // Opaque pointer to NNG listener
     };
 
     // Client class for req/rep protocol
@@ -104,8 +104,8 @@ public:
         Client& operator=(const Server&) = delete;
 
     private:
-        void* socket; // Opaque pointer to NNG socket
-        void* dialer; // Opaque pointer to NNG dialer
+     void* m_socket;  // Opaque pointer to NNG socket
+     void* m_dialer;  // Opaque pointer to NNG dialer
     };
 };
 
