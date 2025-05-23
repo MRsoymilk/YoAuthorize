@@ -30,7 +30,6 @@ if(ENABLE_TEST_YA_CONFIG)
   )
   add_test(NAME TestConfig COMMAND test_config)
   gtest_discover_tests(test_config)
-
 endif()
 
 # ========================= test ya log =========================
@@ -48,15 +47,7 @@ endif()
 
 # ========================= test ya communicate =========================
 if(ENABLE_TEST_YA_COMMUNICATE)
-  add_executable(test_communicate test_communicate.cpp)
-  target_link_libraries(test_communicate PRIVATE
-    GTest::gtest
-    GTest::gtest_main
-    ya_communicate
-    nng
-  )
-  add_test(NAME TestCommunicate COMMAND test_communicate)
-  gtest_discover_tests(test_communicate)
+  add_subdirectory(test_communicate)
 endif()
 
 # ========================= test ya utils =========================
@@ -98,27 +89,7 @@ endif()
 
 # ========================= test ya sql =========================
 if(ENABLE_TEST_YA_SQL)
-  add_executable(test_sqlite test_sqlite.cpp)
-  target_link_libraries(test_sqlite PRIVATE
-    GTest::gtest
-    GTest::gtest_main
-    GTest::gmock
-    ya_sqldriver
-    sqlite3
-  )
-  add_test(NAME TestSqlite COMMAND test_sqlite)
-  gtest_discover_tests(test_sqlite)
-
-  add_executable(test_mysql test_mysql.cpp)
-  target_link_libraries(test_mysql PRIVATE
-    GTest::gtest
-    GTest::gtest_main
-    GTest::gmock
-    ya_sqldriver
-    mysql::concpp
-  )
-  add_test(NAME TestMySQL COMMAND test_mysql)
-  gtest_discover_tests(test_mysql)
+  add_subdirectory(test_sql)
 endif()
 
 # ========================= test ya shell =========================

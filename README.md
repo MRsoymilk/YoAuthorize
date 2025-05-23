@@ -96,9 +96,17 @@ make install
   - mysql
   - mongodb
   - sqlite
-utils
+- utils
   - exe
   - timer
   - platform
+- communicate
+  - arch
+    - single
+    - p2p
+  - module
+    - http
+    - server
+    - client
 ```
 

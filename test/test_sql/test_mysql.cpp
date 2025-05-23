@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "yasqldriver.h"
+#include "yasql.h"
 
 class YaSqlMysqlTest : public ::testing::Test {
  protected:
@@ -14,7 +14,7 @@ class YaSqlMysqlTest : public ::testing::Test {
     driver.query("CREATE TABLE users (name VARCHAR(100), age INT)");
   }
 
-  ya::YaSqlDriver driver;
+  ya::YaSql driver;
 };
 
 TEST_F(YaSqlMysqlTest, InsertAndQuery) {

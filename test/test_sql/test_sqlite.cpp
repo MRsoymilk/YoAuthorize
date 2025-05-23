@@ -2,9 +2,9 @@
 #include <gtest/gtest.h>
 
 #include "isqldriver.h"
-#include "yasqldriver.h"
+#include "yasql.h"
 
-// Mock ISqlDriver for testing YaSqlDriver without SQLite
+// Mock ISqlDriver for testing YaSql without SQLite
 class MockSqlDriver : public ya::ISqlDriver {
  public:
   MOCK_METHOD1(connect, bool(const std::string&));
@@ -18,7 +18,7 @@ class MockSqlDriver : public ya::ISqlDriver {
                           const std::string&));
 };
 
-class YaSqlDriverTest : public ::testing::Test {
+class YaSqlTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Initialize with SQLite driver
@@ -31,32 +31,32 @@ class YaSqlDriverTest : public ::testing::Test {
     EXPECT_TRUE(result.empty()) << "Failed to create table";
   }
 
-  ya::YaSqlDriver driver;
+  ya::YaSql driver;
 };
 
-TEST_F(YaSqlDriverTest, LoadDriverSQLite) {
-  ya::YaSqlDriver new_driver;
+TEST_F(YaSqlTest, LoadDriverSQLite) {
+  ya::YaSql new_driver;
   EXPECT_TRUE(new_driver.loadDriver("sqlite"));
 }
 
-TEST_F(YaSqlDriverTest, LoadDriverInvalid) {
-  ya::YaSqlDriver new_driver;
+TEST_F(YaSqlTest, LoadDriverInvalid) {
+  ya::YaSql new_driver;
   EXPECT_FALSE(new_driver.loadDriver("invalid_driver"));
 }
 
-TEST_F(YaSqlDriverTest, ConnectSuccess) {
-  ya::YaSqlDriver new_driver;
+TEST_F(YaSqlTest, ConnectSuccess) {
+  ya::YaSql new_driver;
   ASSERT_TRUE(new_driver.loadDriver("sqlite"));
   EXPECT_TRUE(new_driver.connect(":memory:"));
 }
 
-TEST_F(YaSqlDriverTest, ConnectWithoutDriver) {
-  ya::YaSqlDriver new_driver;
+TEST_F(YaSqlTest, ConnectWithoutDriver) {
+  ya::YaSql new_driver;
   EXPECT_FALSE(new_driver.connect(":memory:"))
       << "Should fail without loaded driver";
 }
 
-TEST_F(YaSqlDriverTest, InsertData) {
+TEST_F(YaSqlTest, InsertData) {
   std::map<std::string, std::string> data = {{"name", "Alice"}, {"age", "25"}};
   EXPECT_TRUE(driver.insert("users", data));
 
@@ -66,12 +66,12 @@ TEST_F(YaSqlDriverTest, InsertData) {
   EXPECT_EQ(results[0]["age"], "25");
 }
 
-TEST_F(YaSqlDriverTest, InsertEmptyData) {
+TEST_F(YaSqlTest, InsertEmptyData) {
   std::map<std::string, std::string> data;
   EXPECT_FALSE(driver.insert("users", data));
 }
 
-TEST_F(YaSqlDriverTest, UpdateData) {
+TEST_F(YaSqlTest, UpdateData) {
   std::map<std::string, std::string> data = {{"name", "Bob"}, {"age", "30"}};
   ASSERT_TRUE(driver.insert("users", data));
 
@@ -83,7 +83,7 @@ TEST_F(YaSqlDriverTest, UpdateData) {
   EXPECT_EQ(results[0]["age"], "31");
 }
 
-TEST_F(YaSqlDriverTest, RemoveData) {
+TEST_F(YaSqlTest, RemoveData) {
   std::map<std::string, std::string> data = {{"name", "Charlie"},
                                              {"age", "40"}};
   ASSERT_TRUE(driver.insert("users", data));
@@ -94,7 +94,7 @@ TEST_F(YaSqlDriverTest, RemoveData) {
   EXPECT_TRUE(results.empty());
 }
 
-TEST_F(YaSqlDriverTest, QueryMultipleRows) {
+TEST_F(YaSqlTest, QueryMultipleRows) {
   std::map<std::string, std::string> data1 = {{"name", "Eve"}, {"age", "22"}};
   std::map<std::string, std::string> data2 = {{"name", "Frank"}, {"age", "33"}};
   ASSERT_TRUE(driver.insert("users", data1));
@@ -107,13 +107,13 @@ TEST_F(YaSqlDriverTest, QueryMultipleRows) {
 }
 
 // Mock-based test for delegation
-TEST(YaSqlDriverMockTest, DelegatesToDriver) {
-  ya::YaSqlDriver driver;
+TEST(YaSqlMockTest, DelegatesToDriver) {
+  ya::YaSql driver;
   auto mock_driver = std::make_unique<MockSqlDriver>();
   MockSqlDriver* mock_ptr = mock_driver.get();
 
   // Simulate loading a mock driver (bypassing loadDriver)
-  driver = ya::YaSqlDriver();  // Reset driver
+  driver = ya::YaSql();  // Reset driver
   // Note: We need a way to inject the mock; this assumes a setter or loadDriver
   // supports mocks For simplicity, we'll test delegation directly
 
@@ -124,6 +124,6 @@ TEST(YaSqlDriverMockTest, DelegatesToDriver) {
       .WillOnce(testing::Return(
           std::vector<std::map<std::string, std::string>>{{{"name", "Test"}}}));
 
-  // This requires a way to inject mock_driver into YaSqlDriver
-  // If loadDriver can't be mocked, add a setter or modify YaSqlDriver
+  // This requires a way to inject mock_driver into YaSql
+  // If loadDriver can't be mocked, add a setter or modify YaSql
 }
