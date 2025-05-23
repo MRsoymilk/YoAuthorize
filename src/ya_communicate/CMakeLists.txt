@@ -20,6 +20,8 @@ add_library(ya_communicate STATIC
   module/subscriber.cpp
   module/survey.h
   module/survey.cpp
+  module/bus.h
+  module/bus.cpp
 )
 
 target_include_directories(ya_communicate PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
