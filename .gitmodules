@@ -25,3 +25,6 @@
 [submodule "vendor/mongo-cxx-driver"]
 	path = vendor/mongo-cxx-driver
 	url = https://github.com/mongodb/mongo-cxx-driver
+[submodule "vendor/json"]
+	path = vendor/json
+	url = https://github.com/nlohmann/json.git

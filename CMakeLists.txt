@@ -74,6 +74,9 @@ if(ENABLE_YA_JSON)
   # simdjson
   add_subdirectory(vendor/simdjson)
   target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
+  # nlohmann json
+  add_subdirectory(vendor/json)
+  target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 endif()
 
 if(ENABLE_YA_HWINFO)
