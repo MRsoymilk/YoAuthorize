@@ -1,5 +1,5 @@
-#ifndef YA_SQLDRIVER_H
-#define YA_SQLDRIVER_H
+#ifndef YA_SQL_H
+#define YA_SQL_H
 
 #include <memory>
 #include <vector>
@@ -9,7 +9,7 @@
 
 namespace ya {
 
-class YaSqlDriver {
+class YaSql {
  public:
   bool loadDriver(const std::string& yype);
   bool connect(const std::string& uri);
@@ -28,4 +28,4 @@ class YaSqlDriver {
 
 }  // namespace ya
 
-#endif  // !YA_SQLDRIVER_H
+#endif  // !YA_SQL_H

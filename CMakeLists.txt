@@ -33,7 +33,7 @@ option(ENABLE_YA_CONFIG "Build ya_config module" OFF)
 option(ENABLE_YA_COMMUNICATE "Build ya_communicate module" OFF)
 option(ENABLE_YA_JSON "Build ya_json module" OFF)
 option(ENABLE_YA_HWINFO "Build ya_hwinfo module" OFF)
-option(ENABLE_YA_SQLDRIVER "Build ya_sqldriver module" OFF)
+option(ENABLE_YA_SQL "Build ya_sql module" OFF)
 option(ENABLE_YA_SHELL "Build ya_shell module" OFF)
 option(ENABLE_YA_TEST "Build test" OFF)
 
@@ -84,11 +84,11 @@ if(ENABLE_YA_HWINFO)
   target_link_libraries(${PROJECT_NAME} PRIVATE ya_hwinfo)
 endif()
 
-if(ENABLE_YA_SQLDRIVER)
-  add_subdirectory(src/ya_sqldriver)
-  target_link_libraries(${PROJECT_NAME} PRIVATE ya_sqldriver)
+if(ENABLE_YA_SQL)
+  add_subdirectory(src/ya_sql)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ya_sql)
 
-  # sql driver: sqlit
+  # sql driver: sqlite
   add_subdirectory(vendor/sqlite-amalgamation)
   target_link_libraries(${PROJECT_NAME} PRIVATE sqlite3)
 
@@ -100,16 +100,23 @@ if(ENABLE_YA_SQLDRIVER)
 target_link_libraries(${PROJECT_NAME} PRIVATE mysql::concpp)
 
 # sql driver: MongoDB
-find_package(bsoncxx 4.1 REQUIRED CONFIG
+find_package(bson 2.0.0 REQUIRED CONFIG
+  PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/bson-2.0.0"
+  NO_DEFAULT_PATH
+)
+find_package(bsoncxx 4.1.0 REQUIRED CONFIG
   PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/bsoncxx-4.1.0"
   NO_DEFAULT_PATH
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE mongo::mongocxx_shared mongo::bsoncxx_shared)
-
-find_package(mongocxx 4.1 REQUIRED CONFIG
+find_package(mongoc 2.0.0 REQUIRED CONFIG
+  PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/mongoc-2.0.0"
+  NO_DEFAULT_PATH
+)
+find_package(mongocxx 4.1.0 REQUIRED CONFIG
   PATHS "${CMAKE_SOURCE_DIR}/vendor/mongo-cxx-driver/build/lib64/cmake/mongocxx-4.1.0"
   NO_DEFAULT_PATH
 )
+target_link_libraries(${PROJECT_NAME} PRIVATE mongo::mongocxx_shared mongo::bsoncxx_shared)
 endif()
 
 if(ENABLE_YA_SHELL)

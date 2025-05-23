@@ -1,6 +1,6 @@
-add_library(ya_sqldriver STATIC
-  yasqldriver.h
-  yasqldriver.cpp
+add_library(ya_sql STATIC
+  yasql.h
+  yasql.cpp
   isqldriver.h
   mongodb/mongodbdriver.h
   mongodb/mongodbdriver.cpp
@@ -12,7 +12,7 @@ add_library(ya_sqldriver STATIC
   sqlite/sqlitedriver.cpp
 )
 
-target_include_directories(ya_sqldriver PUBLIC
+target_include_directories(ya_sql PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
-target_link_libraries(ya_sqldriver PUBLIC sqlite3 mysql::concpp)
+target_link_libraries(ya_sql PUBLIC sqlite3 mysql::concpp)
