@@ -44,10 +44,11 @@ if(ENABLE_YA_LOG)
   # spdlog
   add_subdirectory(vendor/spdlog)
   target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
-
 endif()
 
 if(ENABLE_YA_UTILS)
+  find_package(OpenSSL REQUIRED)
+  target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
   add_subdirectory(src/ya_utils)
   target_link_libraries(${PROJECT_NAME} PRIVATE ya_utils)
 endif()

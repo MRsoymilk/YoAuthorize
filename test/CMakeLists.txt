@@ -57,6 +57,8 @@ if(ENABLE_TEST_YA_UTILS)
     GTest::gtest
     GTest::gtest_main
     ya_utils
+    OpenSSL::SSL
+    OpenSSL::Crypto
   )
   add_test(NAME TestUtils COMMAND test_utils)
   gtest_discover_tests(test_utils)
