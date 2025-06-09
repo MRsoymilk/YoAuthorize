@@ -1,2 +1,6 @@
 add_library(global_headers INTERFACE)
 target_include_directories(global_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_sources(global_headers INTERFACE
+    "platform_def.h"
+)

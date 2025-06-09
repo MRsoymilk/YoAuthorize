@@ -5,6 +5,9 @@
 #include <map>
 #include <thread>
 #include <vector>
+
+#include "platform_def.h"
+
 namespace ya {
 
 std::string YaUtils::Exe::m_exe_name = "";
@@ -55,7 +58,6 @@ double YaUtils::Timer::GetElapsedTime_μs(const std::string& timer_id) {
       std::chrono::duration_cast<std::chrono::microseconds>(now - it->second);
   return static_cast<double>(duration.count());
 }
-#include "platform_def.h"
 
 YaUtils::Platform::PLATFORM YaUtils::Platform::GetPlatform() {
 #if defined(YA_WINDOWS)
