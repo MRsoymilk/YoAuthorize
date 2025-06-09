@@ -109,6 +109,18 @@ TEST(YaJsonTest, SetArray) {
   EXPECT_EQ(result[1], 50);
 }
 
+TEST(YaJsonTest, Set) {
+  ya::YaJson json;
+  json["number"] = "233";
+  json["is_active"] = true;
+  json["pi"] = 3.1415926;
+  ya::YaJson child;
+  child["name"] = "child";
+  child["num"] = 233;
+  json["parent"] = child;
+  std::cout << json.toString() << std::endl;
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

@@ -9,7 +9,7 @@ namespace ya {
 
 class YaJson::Impl {
  public:
-  Impl() = default;
+  Impl() { loadFromString("{}"); }
 
   void loadFromString(const std::string& str) {
     auto json_ptr = std::make_shared<simdjson::padded_string>(str);
@@ -109,6 +109,19 @@ class YaJson::Impl {
     modifyJson([&](nlohmann::json& j) { j[key] = value; });
   }
 
+  void setObject(const std::string& key, const YaJson& value) {
+    modifyJson([&](nlohmann::json& j) {
+      nlohmann::json obj = nlohmann::json::parse(value.toString());
+      j[key] = obj;
+    });
+  }
+
+  std::string toString() const {
+    std::stringstream ss;
+    ss << m_document;
+    return ss.str();
+  }
+
  private:
   simdjson::dom::parser m_parser;
   std::shared_ptr<simdjson::padded_string> m_json_data;
@@ -191,6 +204,8 @@ YaJson::YaJsonProxy YaJson::operator[](const std::string& key) {
   return YaJsonProxy(*this, key);
 }
 
+std::string YaJson::toString() const { return m_impl->toString(); }
+
 YaJson::YaJsonProxy::YaJsonProxy(YaJson& parent, const std::string& key)
     : m_parent(parent), m_key(key) {}
 
@@ -228,6 +243,70 @@ YaJson::YaJsonProxy& YaJson::YaJsonProxy::operator=(
     const std::vector<int64_t>& value) {
   m_parent.m_impl->setArray(m_key, value);
   return *this;
+}
+
+YaJson::YaJsonProxy& YaJson::YaJsonProxy::operator=(const YaJson& value) {
+  m_parent.m_impl->setObject(m_key, value);
+  return *this;
+}
+
+std::ostream& operator<<(std::ostream& os, const YaJson::YaJsonProxy& proxy) {
+  try {
+    // Try string first
+    try {
+      os << proxy.m_parent.getString(proxy.m_key);
+      return os;
+    } catch (...) {
+    }
+
+    // Try bool
+    try {
+      os << (proxy.m_parent.getBool(proxy.m_key) ? "true" : "false");
+      return os;
+    } catch (...) {
+    }
+
+    // Try double
+    try {
+      os << proxy.m_parent.getDouble(proxy.m_key);
+      return os;
+    } catch (...) {
+    }
+
+    // Try int64
+    try {
+      os << proxy.m_parent.getInt(proxy.m_key);
+      return os;
+    } catch (...) {
+    }
+
+    // Try array
+    try {
+      std::vector<int64_t> arr = proxy.m_parent.getArray(proxy.m_key);
+      os << "[";
+      for (size_t i = 0; i < arr.size(); ++i) {
+        os << arr[i];
+        if (i < arr.size() - 1) os << ", ";
+      }
+      os << "]";
+      return os;
+    } catch (...) {
+    }
+
+    // Try object
+    try {
+      YaJson obj = proxy.m_parent.getObject(proxy.m_key);
+      os << obj.toString();
+      return os;
+    } catch (...) {
+    }
+
+    throw std::runtime_error("Key not found or unsupported type: " +
+                             proxy.m_key);
+  } catch (const std::exception& e) {
+    throw std::runtime_error("Error accessing key " + proxy.m_key + ": " +
+                             e.what());
+  }
 }
 
 }  // namespace ya

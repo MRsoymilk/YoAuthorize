@@ -25,6 +25,7 @@ class YaJson {
   std::vector<int64_t> getArray(const std::string& key);
   YaJson getObject(const std::string& key);
   std::vector<YaJson> getArrayObject(const std::string& key);
+  std::string toString() const;
 
   class YaJsonProxy;
 
@@ -51,12 +52,16 @@ class YaJson::YaJsonProxy {
   YaJsonProxy& operator=(bool value);
   YaJsonProxy& operator=(double value);
   YaJsonProxy& operator=(const std::vector<int64_t>& value);
+  YaJsonProxy& operator=(const YaJson& value);
 
  private:
   YaJson& m_parent;
   std::string m_key;
+
+  friend std::ostream& operator<<(std::ostream& os, const YaJsonProxy& proxy);
 };
 
+std::ostream& operator<<(std::ostream& os, const YaJson::YaJsonProxy& proxy);
 }  // namespace ya
 
 #endif  // YAJSON_H
