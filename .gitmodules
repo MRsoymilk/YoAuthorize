@@ -13,12 +13,6 @@
 [submodule "vendor/gflags"]
 	path = vendor/gflags
 	url = https://github.com/gflags/gflags.git
-[submodule "vendor/brpc"]
-	path = vendor/brpc
-	url = https://github.com/apache/brpc
-[submodule "vendor/simdjson"]
-	path = vendor/simdjson
-	url = https://github.com/simdjson/simdjson
 [submodule "vendor/mysql-connector-cpp"]
 	path = vendor/mysql-connector-cpp
 	url = https://github.com/mysql/mysql-connector-cpp.git

@@ -1,159 +1,190 @@
 #include "yajson.h"
 
-#include <simdjson.h>
-
+#include <fstream>
 #include <nlohmann/json.hpp>
 #include <sstream>
+#include <stdexcept>
 
 namespace ya {
 
 class YaJson::Impl {
  public:
-  Impl() { loadFromString("{}"); }
+  Impl() { m_document = nlohmann::json::object(); }
 
   void loadFromString(const std::string& str) {
-    auto json_ptr = std::make_shared<simdjson::padded_string>(str);
-    m_json_data = json_ptr;
-    auto doc = m_parser.parse(*json_ptr);
-    m_document = std::move(doc.value());
+    try {
+      m_document = nlohmann::json::parse(str);
+    } catch (const nlohmann::json::exception& e) {
+      throw std::runtime_error("JSON parse error: " + std::string(e.what()));
+    }
   }
 
   void loadFromFile(const std::string& file) {
-    auto result = simdjson::padded_string::load(file);
-    auto json_ptr =
-        std::make_shared<simdjson::padded_string>(std::move(result.value()));
-    m_json_data = json_ptr;
-    auto doc = m_parser.parse(*json_ptr);
-    m_document = std::move(doc.value());
-  }
-
-  std::string getString(const std::string& key) {
-    auto val = m_document[key];
-    return std::string(val.value().get_string().value());
-  }
-
-  int64_t getInt(const std::string& key) {
-    auto val = m_document[key];
-    return val.value().get_int64().value();
-  }
-
-  bool getBool(const std::string& key) {
-    auto val = m_document[key];
-    return val.value().get_bool().value();
-  }
-
-  double getDouble(const std::string& key) {
-    auto val = m_document[key];
-    return val.value().get_double().value();
-  }
-
-  std::vector<int64_t> getArray(const std::string& key) {
-    std::vector<int64_t> result;
-    auto val = m_document[key];
-    simdjson::dom::array arr = val.value().get_array();
-    for (auto item : arr) {
-      result.push_back(item.get_int64().value());
+    std::ifstream ifs(file);
+    if (!ifs.is_open()) {
+      throw std::runtime_error("Failed to open file: " + file);
     }
-    return result;
-  }
-
-  static std::unique_ptr<Impl> fromElement(
-      const simdjson::dom::element& element,
-      std::shared_ptr<simdjson::padded_string> json_data) {
-    if (!element.is_object()) {
-      throw std::runtime_error("Element is not an object.");
+    try {
+      ifs >> m_document;
+    } catch (const nlohmann::json::exception& e) {
+      throw std::runtime_error("JSON parse error in file " + file + ": " +
+                               e.what());
     }
-    auto impl = std::make_unique<Impl>();
-    impl->m_document = element;
-    impl->m_json_data = std::move(json_data);
-    impl->m_parser = simdjson::dom::parser();
-    return impl;
   }
 
-  std::unique_ptr<Impl> getObject(const std::string& key) {
-    auto val = m_document[key];
-    simdjson::dom::element obj = val.value();
-    return Impl::fromElement(obj, m_json_data);
+  std::string getString(const std::string& key) const {
+    try {
+      return m_document.at(key).get<std::string>();
+    } catch (const nlohmann::json::out_of_range& e) {
+      throw std::runtime_error("Key not found: " + key);
+    } catch (const nlohmann::json::type_error& e) {
+      throw std::runtime_error("Type mismatch for key " + key +
+                               ": expected string");
+    }
   }
 
-  std::vector<std::unique_ptr<Impl>> getArrayObject(const std::string& key) {
-    std::vector<std::unique_ptr<Impl>> result;
-    auto arr_val = m_document[key];
-    simdjson::dom::array arr = arr_val.value().get_array();
-    for (auto elem : arr) {
-      if (!elem.is_object()) {
-        throw std::runtime_error("Array element is not an object");
+  int64_t getInt(const std::string& key) const {
+    try {
+      return m_document.at(key).get<int64_t>();
+    } catch (const nlohmann::json::out_of_range& e) {
+      throw std::runtime_error("Key not found: " + key);
+    } catch (const nlohmann::json::type_error& e) {
+      throw std::runtime_error("Type mismatch for key " + key +
+                               ": expected integer");
+    }
+  }
+
+  bool getBool(const std::string& key) const {
+    try {
+      return m_document.at(key).get<bool>();
+    } catch (const nlohmann::json::out_of_range& e) {
+      throw std::runtime_error("Key not found: " + key);
+    } catch (const nlohmann::json::type_error& e) {
+      throw std::runtime_error("Type mismatch for key " + key +
+                               ": expected boolean");
+    }
+  }
+
+  double getDouble(const std::string& key) const {
+    try {
+      return m_document.at(key).get<double>();
+    } catch (const nlohmann::json::out_of_range& e) {
+      throw std::runtime_error("Key not found: " + key);
+    } catch (const nlohmann::json::type_error& e) {
+      throw std::runtime_error("Type mismatch for key " + key +
+                               ": expected double");
+    }
+  }
+
+  std::vector<int64_t> getArray(const std::string& key) const {
+    try {
+      std::vector<int64_t> result;
+      for (const auto& item : m_document.at(key)) {
+        if (!item.is_number_integer()) {
+          throw std::runtime_error("Array element for key " + key +
+                                   " is not an integer");
+        }
+        result.push_back(item.get<int64_t>());
       }
-      result.push_back(Impl::fromElement(elem, m_json_data));
+      return result;
+    } catch (const nlohmann::json::out_of_range& e) {
+      throw std::runtime_error("Key not found: " + key);
+    } catch (const nlohmann::json::type_error& e) {
+      throw std::runtime_error("Type mismatch for key " + key +
+                               ": expected array");
     }
-    return result;
+  }
+
+  std::unique_ptr<Impl> getObject(const std::string& key) const {
+    try {
+      if (!m_document.at(key).is_object()) {
+        throw std::runtime_error("Value for key " + key + " is not an object");
+      }
+      auto impl = std::make_unique<Impl>();
+      impl->m_document = m_document.at(key);
+      return impl;
+    } catch (const nlohmann::json::out_of_range& e) {
+      throw std::runtime_error("Key not found: " + key);
+    }
+  }
+
+  std::vector<std::unique_ptr<Impl>> getArrayObject(
+      const std::string& key) const {
+    try {
+      std::vector<std::unique_ptr<Impl>> result;
+      for (const auto& elem : m_document.at(key)) {
+        if (!elem.is_object()) {
+          throw std::runtime_error("Array element for key " + key +
+                                   " is not an object");
+        }
+        auto impl = std::make_unique<Impl>();
+        impl->m_document = elem;
+        result.push_back(std::move(impl));
+      }
+      return result;
+    } catch (const nlohmann::json::out_of_range& e) {
+      throw std::runtime_error("Key not found: " + key);
+    } catch (const nlohmann::json::type_error& e) {
+      throw std::runtime_error("Type mismatch for key " + key +
+                               ": expected array of objects");
+    }
   }
 
   void setString(const std::string& key, const std::string& value) {
-    modifyJson([&](nlohmann::json& j) { j[key] = value; });
+    m_document[key] = value;
   }
 
   void setInt(const std::string& key, int64_t value) {
-    modifyJson([&](nlohmann::json& j) { j[key] = value; });
+    m_document[key] = value;
   }
 
-  void setBool(const std::string& key, bool value) {
-    modifyJson([&](nlohmann::json& j) { j[key] = value; });
-  }
+  void setBool(const std::string& key, bool value) { m_document[key] = value; }
 
   void setDouble(const std::string& key, double value) {
-    modifyJson([&](nlohmann::json& j) { j[key] = value; });
+    m_document[key] = value;
   }
 
   void setArray(const std::string& key, const std::vector<int64_t>& value) {
-    modifyJson([&](nlohmann::json& j) { j[key] = value; });
+    m_document[key] = value;
   }
 
   void setObject(const std::string& key, const YaJson& value) {
-    modifyJson([&](nlohmann::json& j) {
-      nlohmann::json obj = nlohmann::json::parse(value.toString());
-      j[key] = obj;
-    });
+    try {
+      m_document[key] = nlohmann::json::parse(value.toString());
+    } catch (const nlohmann::json::exception& e) {
+      throw std::runtime_error("Failed to set object for key " + key + ": " +
+                               e.what());
+    }
   }
 
   std::string toString() const {
-    std::stringstream ss;
-    ss << m_document;
-    return ss.str();
+    try {
+      return m_document.dump();
+    } catch (const nlohmann::json::exception& e) {
+      throw std::runtime_error("Failed to serialize JSON: " +
+                               std::string(e.what()));
+    }
   }
 
  private:
-  simdjson::dom::parser m_parser;
-  std::shared_ptr<simdjson::padded_string> m_json_data;
-  simdjson::dom::element m_document;
-
-  void modifyJson(const std::function<void(nlohmann::json&)>& modifier) {
-    std::stringstream ss;
-    ss << m_document;
-    std::string json_str = ss.str();
-    nlohmann::json j = nlohmann::json::parse(json_str);
-    modifier(j);
-    std::string new_json_str = j.dump();
-    auto json_ptr = std::make_shared<simdjson::padded_string>(new_json_str);
-    m_json_data = json_ptr;
-    auto doc = m_parser.parse(*json_ptr);
-    m_document = std::move(doc.value());
-  }
+  nlohmann::json m_document;
 };
+
+// --------------------- YaJson 接口 ---------------------
 
 YaJson::YaJson() : m_impl(std::make_unique<Impl>()) {}
 
 YaJson::YaJson(const std::string& json) : m_impl(std::make_unique<Impl>()) {
-  if (json.ends_with(".json")) {
-    m_impl->loadFromFile(json);
+  if (json.size() > 5 && json.substr(json.size() - 5) == ".json") {
+    loadFromFile(json);
   } else {
-    m_impl->loadFromString(json);
+    loadFromString(json);
   }
 }
 
 YaJson::YaJson(std::unique_ptr<Impl> impl) : m_impl(std::move(impl)) {}
 
-YaJson::~YaJson() {}
+YaJson::~YaJson() = default;
 
 void YaJson::loadFromString(const std::string& str) {
   m_impl->loadFromString(str);
@@ -163,27 +194,31 @@ void YaJson::loadFromFile(const std::string& file) {
   m_impl->loadFromFile(file);
 }
 
-std::string YaJson::getString(const std::string& key) {
+std::string YaJson::getString(const std::string& key) const {
   return m_impl->getString(key);
 }
 
-int64_t YaJson::getInt(const std::string& key) { return m_impl->getInt(key); }
+int64_t YaJson::getInt(const std::string& key) const {
+  return m_impl->getInt(key);
+}
 
-bool YaJson::getBool(const std::string& key) { return m_impl->getBool(key); }
+bool YaJson::getBool(const std::string& key) const {
+  return m_impl->getBool(key);
+}
 
-double YaJson::getDouble(const std::string& key) {
+double YaJson::getDouble(const std::string& key) const {
   return m_impl->getDouble(key);
 }
 
-std::vector<int64_t> YaJson::getArray(const std::string& key) {
+std::vector<int64_t> YaJson::getArray(const std::string& key) const {
   return m_impl->getArray(key);
 }
 
-YaJson YaJson::getObject(const std::string& key) {
+YaJson YaJson::getObject(const std::string& key) const {
   return YaJson(m_impl->getObject(key));
 }
 
-std::vector<YaJson> YaJson::getArrayObject(const std::string& key) {
+std::vector<YaJson> YaJson::getArrayObject(const std::string& key) const {
   std::vector<YaJson> objs;
   for (auto& impl : m_impl->getArrayObject(key)) {
     objs.emplace_back(YaJson(std::move(impl)));
@@ -205,6 +240,8 @@ YaJson::YaJsonProxy YaJson::operator[](const std::string& key) {
 }
 
 std::string YaJson::toString() const { return m_impl->toString(); }
+
+// --------------------- Proxy 实现 ---------------------
 
 YaJson::YaJsonProxy::YaJsonProxy(YaJson& parent, const std::string& key)
     : m_parent(parent), m_key(key) {}
@@ -251,62 +288,8 @@ YaJson::YaJsonProxy& YaJson::YaJsonProxy::operator=(const YaJson& value) {
 }
 
 std::ostream& operator<<(std::ostream& os, const YaJson::YaJsonProxy& proxy) {
-  try {
-    // Try string first
-    try {
-      os << proxy.m_parent.getString(proxy.m_key);
-      return os;
-    } catch (...) {
-    }
-
-    // Try bool
-    try {
-      os << (proxy.m_parent.getBool(proxy.m_key) ? "true" : "false");
-      return os;
-    } catch (...) {
-    }
-
-    // Try double
-    try {
-      os << proxy.m_parent.getDouble(proxy.m_key);
-      return os;
-    } catch (...) {
-    }
-
-    // Try int64
-    try {
-      os << proxy.m_parent.getInt(proxy.m_key);
-      return os;
-    } catch (...) {
-    }
-
-    // Try array
-    try {
-      std::vector<int64_t> arr = proxy.m_parent.getArray(proxy.m_key);
-      os << "[";
-      for (size_t i = 0; i < arr.size(); ++i) {
-        os << arr[i];
-        if (i < arr.size() - 1) os << ", ";
-      }
-      os << "]";
-      return os;
-    } catch (...) {
-    }
-
-    // Try object
-    try {
-      YaJson obj = proxy.m_parent.getObject(proxy.m_key);
-      os << obj.toString();
-      return os;
-    } catch (...) {
-    }
-
-    throw std::runtime_error("Key not found or unsupported type: " +
-                             proxy.m_key);
-  } catch (const std::exception& e) {
-    throw std::runtime_error("Error accessing key " + proxy.m_key + ": " +
-                             e.what());
-  }
+  os << proxy.m_parent.getString(proxy.m_key);
+  return os;
 }
 
 }  // namespace ya

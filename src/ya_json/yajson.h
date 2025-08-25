@@ -15,28 +15,30 @@ class YaJson {
   YaJson& operator=(YaJson&& other) noexcept;
   ~YaJson();
 
+  // 加载 JSON 数据
   void loadFromString(const std::string& str);
   void loadFromFile(const std::string& file);
 
-  std::string getString(const std::string& key);
-  int64_t getInt(const std::string& key);
-  bool getBool(const std::string& key);
-  double getDouble(const std::string& key);
-  std::vector<int64_t> getArray(const std::string& key);
-  YaJson getObject(const std::string& key);
-  std::vector<YaJson> getArrayObject(const std::string& key);
+  // 获取 JSON 数据
+  std::string getString(const std::string& key) const;
+  int64_t getInt(const std::string& key) const;
+  bool getBool(const std::string& key) const;
+  double getDouble(const std::string& key) const;
+  std::vector<int64_t> getArray(const std::string& key) const;
+  YaJson getObject(const std::string& key) const;
+  std::vector<YaJson> getArrayObject(const std::string& key) const;
   std::string toString() const;
 
   class YaJsonProxy;
 
-  // Overload operator[] to return a proxy for assignment
+  // 用于赋值的代理对象
   YaJsonProxy operator[](const std::string& key);
 
  private:
   class Impl;
   std::unique_ptr<Impl> m_impl;
 
-  // Private constructor for internal use
+  // 私有构造函数，供内部使用
   YaJson(std::unique_ptr<Impl> impl);
 };
 
@@ -44,10 +46,10 @@ class YaJson::YaJsonProxy {
  public:
   YaJsonProxy(YaJson& parent, const std::string& key);
 
-  // Assignment operators for different types
+  // 赋值操作符
   YaJsonProxy& operator=(const std::string& value);
   YaJsonProxy& operator=(const char* value);
-  YaJsonProxy& operator=(int value);  // Added for int literals
+  YaJsonProxy& operator=(int value);
   YaJsonProxy& operator=(int64_t value);
   YaJsonProxy& operator=(bool value);
   YaJsonProxy& operator=(double value);
@@ -62,6 +64,7 @@ class YaJson::YaJsonProxy {
 };
 
 std::ostream& operator<<(std::ostream& os, const YaJson::YaJsonProxy& proxy);
+
 }  // namespace ya
 
 #endif  // YAJSON_H

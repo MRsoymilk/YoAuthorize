@@ -100,6 +100,7 @@ make install
   - exe
   - timer
   - platform
+  - crypto
 - communicate
   - arch
     - single
@@ -108,5 +109,16 @@ make install
     - http
     - server
     - client
+      - symmetric encryption
+        - AES
+        - DES
+      - asymmetric encryption
+        - RSA
+        - DSA
+      - hash
+        - MD5
+        - SHA
+      - message authentication code
+      - digital signature
 ```
 

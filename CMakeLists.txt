@@ -72,9 +72,6 @@ endif()
 if(ENABLE_YA_JSON)
   add_subdirectory(src/ya_json)
   target_link_libraries(${PROJECT_NAME} PRIVATE ya_json)
-  # simdjson
-  add_subdirectory(vendor/simdjson)
-  target_link_libraries(${PROJECT_NAME} PRIVATE simdjson)
   # nlohmann json
   add_subdirectory(vendor/json)
   target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
@@ -131,7 +128,3 @@ if(ENABLE_YA_TEST)
   add_subdirectory(vendor/gtest)
   target_link_libraries(${PROJECT_NAME} PRIVATE gtest gtest_main)
 endif()
-
-# brpc
-# add_subdirectory(vendor/brpc)
-# target_link_libraries(${PROJECT_NAME} PRIVATE brpc)
