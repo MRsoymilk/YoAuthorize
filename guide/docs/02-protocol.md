@@ -1,246 +1,129 @@
-# 02. License Protocol
+# 02. Wire Protocol
 
-## 1. 目标
+本文件定义实现必须遵守的 v1 Wire Protocol。FlatBuffers 只编码 Payload；Frame、
+握手和记录保护由协议层定义，不依赖具体 IPC。
 
-License Protocol 必须与：
+## 1. Frame
 
-- UI 框架
-- 编程语言
-- IPC 类型
-- 操作系统
+每个 Frame 由 20 字节 Header 和 `payload_length` 字节 Payload 组成：
 
-解耦。
+| Offset | Size | Field | Encoding |
+|---:|---:|---|---|
+| 0 | 4 | Magic | ASCII `YAL1` |
+| 4 | 2 | Frame Version | unsigned, big-endian；v1 为 `1` |
+| 6 | 2 | Flags | unsigned, big-endian |
+| 8 | 8 | Sequence | unsigned, big-endian |
+| 16 | 4 | Payload Length | unsigned, big-endian |
 
-推荐序列化：
+Flags v1：
 
-> Protocol Buffers
+- `0x0000`：明文握手 Frame。
+- `0x0001`：Payload 是 ChaCha20-Poly1305 的 `ciphertext || 16-byte tag`。
+- 其他位必须为 0；收到未知位立即关闭连接。
 
-## 2. 协议分层
+规则：
 
-```text
-Application Message
-├── Auth
-├── Session
-├── Heartbeat
-├── Feature
-└── License
-        ↓
-Protocol Buffers
-        ↓
-Secure Message Layer
-├── Sequence
-├── Nonce
-└── MAC
-        ↓
-Frame Layer
-        ↓
-IPC Transport
-```
+- 默认 Payload 上限为 1 MiB，必须在分配内存前检查。
+- 不接受错误 Magic、未知 Frame Version、零长度 Payload 或长度溢出。
+- Header 原始 20 字节是 AEAD Additional Authenticated Data。
+- 握手完成后只允许加密 Frame；认证失败不得向对端返回详细原因。
+- 明文 `ClientHello`、`ServerHello` 和 `UnsupportedVersion` 的 Sequence 为 0；
+  `ClientFinished` 是 Client 到 Service 的 Sequence 1。
+- 每个方向使用独立 Sequence，握手后从 1 开始且必须严格递增。
+- Sequence 达到 `UINT64_MAX` 前必须断开并重新握手。
 
-## 3. 建议 Frame Header
+## 2. FlatBuffers Envelope
+
+所有 Payload 使用一个根类型 `Envelope`，文件标识为 `YAMS`：
 
 ```text
-┌──────────────┐
-│ Magic        │ 4 Bytes
-├──────────────┤
-│ Version      │ 2 Bytes
-├──────────────┤
-│ Flags        │ 2 Bytes
-├──────────────┤
-│ Command      │ 2 Bytes
-├──────────────┤
-│ Reserved     │ 2 Bytes
-├──────────────┤
-│ Sequence     │ 8 Bytes
-├──────────────┤
-│ Payload Len  │ 4 Bytes
-├──────────────┤
-│ Payload      │ N Bytes
-├──────────────┤
-│ MAC          │ Optional
-└──────────────┘
+Envelope
+├── protocol_version: uint16
+├── request_id: uint64
+└── body: Message union
 ```
 
-建议：
+- 请求的 `request_id` 非零；响应复制对应值。
+- Service 主动事件使用 `request_id = 0`。
+- 版本协商完成前 Envelope 的 `protocol_version` 为 0；完成后必须等于协商版本。
+- 消息类型由 `body_type` 唯一确定，不在 Frame 中重复保存 Command。
+- FlatBuffers Payload 遵循其标准 little-endian Wire Format；Frame 整数仍使用
+  big-endian，两者不得混用。
+- 解密后必须先检查文件标识并运行 FlatBuffers Verifier，再访问字段。
+- Verifier 必须使用深度、表数量和 Payload 大小限制。
+
+Schema 演进规则：
+
+- 已发布字段不得改类型、改编号或改变默认值语义。
+- 新字段追加到表末尾；删除字段使用 `deprecated`。
+- Union 数值一经发布不得复用。
+- `flatc` 版本由构建固定；兼容性测试使用历史 Golden Vectors。
+
+## 3. 版本协商
+
+`ClientHello` 提供 `min_protocol_version` 和 `max_protocol_version`，Service 选择双方
+支持的最高版本并写入 `ServerHello`。无交集时返回明文、版本为 0 的
+`UnsupportedVersion` 后关闭连接。
+
+Server 签名覆盖双方版本范围和最终版本，防止降级。握手完成后，Envelope 的
+`protocol_version` 必须等于协商结果。v1 收到未知消息类型时返回
+`UnsupportedMessage`；未知字段由 FlatBuffers 兼容规则忽略。
+
+## 4. 消息与状态
 
 ```text
-Magic = 0x4C494345
+Connected
+  ClientHello -> ServerHello -> ClientFinished
+AuthenticatedTransport
+  Authorize -> AuthResult
+SessionActive
+  Heartbeat, QueryLicense, QueryFeatures, CloseSession
+  LicenseChanged, FeatureChanged, LicenseExpired, LicenseRevoked
 ```
 
-逻辑含义为 `LICE`。
+- 握手阶段只允许三个握手消息。
+- `Authorize` 成功后才允许 Session 消息。
+- 同一 `request_id` 的重复请求不得重复创建 Session；Service 应返回缓存结果或
+  `DuplicateRequest`。
+- Response 和 Event 共用 Service 到 Client 的 Sequence 空间，因此接收顺序就是
+ 观察顺序。
 
-## 4. 命令分类
+关键字段：
+
+- `ClientHello`：版本范围、32 字节 client nonce、32 字节 X25519 公钥、SDK 版本。
+- `ServerHello`：选定版本、32 字节 server nonce、32 字节 X25519 公钥、Service
+  key ID、64 字节 Ed25519 签名。
+- `ClientFinished`：包含 32 字节 `SHA-256(transcript)`，并作为第一个加密 Frame
+  发送；成功解密且 Hash 一致即完成 key confirmation。
+- `Authorize`：product ID；进程元数据仅作诊断，不作为可信身份。
+- `AuthResult`：状态、Session ID、Feature 字符串集合、License 到期时间和
+  Heartbeat 参数；不得传输 Session Key。
+- `Heartbeat`：Session ID。Sequence 和认证 Tag 只存在于 Frame，不在消息中重复。
+
+## 5. 错误
+
+稳定错误码分组：
 
 ```text
-System
-├── Hello
-├── Ping
-└── Error
-
-Authentication
-├── Challenge
-├── Authenticate
-└── AuthResult
-
-Session
-├── CreateSession
-├── ResumeSession
-├── CloseSession
-└── SessionState
-
-License
-├── QueryLicense
-├── LicenseChanged
-├── LicenseExpired
-└── LicenseRevoked
-
-Feature
-├── QueryFeatures
-└── FeatureChanged
-
-Heartbeat
-├── Heartbeat
-└── HeartbeatAck
+1000-1999 Protocol: InvalidFrame, UnsupportedVersion, UnsupportedMessage
+2000-2999 License:  LicenseNotFound, InvalidLicense, InvalidSignature,
+                    NotYetValid, Expired, MachineMismatch, ProductMismatch,
+                    Revoked
+3000-3999 Session:  InvalidSession, SessionExpired, SessionLimitExceeded,
+                    DuplicateRequest
+4000-4999 Auth:     AuthenticationFailed, ServiceIdentityInvalid
+5000-5999 Internal: InternalError, StorageError
 ```
 
-## 5. Hello
+- Frame、解密、Verifier 和握手错误是连接级错误，通常直接关闭连接。
+- 普通请求错误通过相同 `request_id` 返回，连接和现有 Session 可继续使用。
+- `InvalidSession`、`Expired` 和 `Revoked` 会使对应 Session 终止。
 
-建议包含：
+具体数值必须集中定义在 Schema 中；发布后不得重排或复用。
 
-```text
-product_id
-app_version
-protocol_version
-process_id
-client_nonce
-sdk_version
-```
+## 6. 时间
 
-## 6. Challenge
-
-Service 返回：
-
-```text
-server_nonce
-challenge_id
-server_timestamp
-server_proof
-```
-
-## 7. Authenticate
-
-Client 返回：
-
-```text
-challenge_id
-product_id
-process_id
-client_nonce
-server_nonce
-auth_proof
-```
-
-## 8. AuthResult
-
-成功：
-
-```text
-result = SUCCESS
-session_id
-session_token / session_material
-feature_mask
-expire_time
-heartbeat_interval
-```
-
-失败：
-
-```text
-result = ERROR
-error_code
-error_message
-```
-
-## 9. Heartbeat
-
-Request：
-
-```text
-session_id
-sequence
-timestamp
-nonce
-mac
-```
-
-Response：
-
-```text
-sequence
-server_time
-license_state
-feature_mask
-expire_time
-mac
-```
-
-## 10. Error Code
-
-建议分类：
-
-```text
-1000 Protocol
-2000 License
-3000 Session
-4000 Authentication
-5000 Internal
-```
-
-例如：
-
-```text
-1001 INVALID_REQUEST
-1002 UNSUPPORTED_VERSION
-
-2001 INVALID_LICENSE
-2002 EXPIRED_LICENSE
-2003 MACHINE_MISMATCH
-2004 PRODUCT_MISMATCH
-2005 REVOKED_LICENSE
-
-3001 INVALID_SESSION
-3002 SESSION_EXPIRED
-3003 SESSION_LIMIT_EXCEEDED
-
-4001 AUTHENTICATION_FAILED
-
-5001 INTERNAL_ERROR
-```
-
-## 11. 协议兼容
-
-必须在所有消息或 Frame 中保留：
-
-```text
-protocol_version
-```
-
-Protocol Buffers 字段只追加，不复用已发布字段编号。
-
-## 12. 不允许的实现
-
-禁止直接发送 C/C++ struct 内存：
-
-```cpp
-send(fd, &obj, sizeof(obj), 0);
-```
-
-因为会受到：
-
-- ABI
-- Padding
-- Endianness
-- Compiler
-- Language
-
-影响。
+- License 时间使用 UTC Unix seconds。
+- Heartbeat interval、timeout 和 Grace Period 使用毫秒。
+- 超时计算使用单调时钟，不使用可回拨的系统墙上时间。
+- v1 不依赖客户端提交的 timestamp 完成防重放。

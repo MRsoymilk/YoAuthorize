@@ -1,156 +1,75 @@
-# 09. License Service 设计
+# 09. License Service
 
-## 1. 职责
+License Service 是 C++20 本地守护进程，组合 IPC、Protocol 和 Core。它不提供 UI，
+也不持有 License 签发私钥。
 
-LicenseService 是授权系统的本地核心。
-
-负责：
-
-- IPC Server
-- Protocol Decode/Encode
-- License 验证
-- Machine Identity
-- Session
-- Heartbeat
-- Feature
-- 本地状态
-- 在线同步（后续）
-
-## 2. 内部模块
+## 1. 内部边界
 
 ```text
-LicenseService
-├── TransportServer
-├── ConnectionManager
-├── ProtocolDispatcher
-├── AuthHandler
-├── LicenseManager
-├── MachineManager
-├── SessionManager
-├── FeatureManager
-├── CryptoManager
-├── StateStorage
-└── OnlineClient
+TransportServer -> Connection -> FrameCodec -> ProtocolDispatcher
+                                             -> AuthHandler
+                                             -> LicenseManager
+                                             -> SessionManager
+                                             -> FeatureManager
+
+MachineIdentity -> LicenseManager
+KeyStore        -> AuthHandler / LicenseManager
+StateStorage    -> LicenseManager
 ```
 
-## 3. Dispatcher
+- Connection 只维护 Transport、握手和每方向加密状态。
+- Dispatcher 只接受当前连接状态允许的消息。
+- Core Manager 不依赖 Transport 类型。
+- Session 创建与 `max_sessions` 检查必须原子化。
 
-负责：
+## 2. 启动与关闭
+
+启动顺序：
 
 ```text
-Frame
-  ↓
-Decode
-  ↓
-Command
-  ↓
-Handler
+Load Config -> Load Trust Keys -> Load Protected State
+-> Load/Verify License -> Collect Machine Identity
+-> Bind IPC Endpoint -> Accept Connections
 ```
 
-例如：
+任何信任密钥、状态或 License 解析失败都不得以 Unbound/Valid 状态继续。关闭时停止
+Accept，通知连接，停止 Session，原子刷新状态，然后关闭端点。
 
-```text
-HELLO       → AuthHandler
-HEARTBEAT   → SessionManager
-QUERY_FEATURE → FeatureManager
-```
+## 3. 文件与权限
 
-## 4. LicenseManager
+默认系统级位置：
 
-负责：
+| Data | Windows | Linux |
+|---|---|---|
+| Config/keys | `%ProgramData%\YoAuthorize\` | `/etc/yoauthorize/` |
+| License/state | `%ProgramData%\YoAuthorize\data\` | `/var/lib/yoauthorize/` |
+| Runtime endpoint | Named Pipe | `/run/yoauthorize/` |
 
-- Load License
-- Verify Signature
-- Verify Product
-- Verify Expiration
-- Evaluate Feature
-- License Reload
+- 安装程序创建目录和 ACL；Service 不依赖当前工作目录。
+- 私有状态使用临时文件、flush/fsync 和原子 rename/replace 写入。
+- 写入使用进程锁，崩溃后可识别旧版本或损坏记录。
+- License 目录不得允许普通客户端用户替换文件或创建符号链接。
 
-## 5. SessionManager
+## 4. 运行账户与对端身份
 
-负责：
+Service 使用最低必要权限的专用账户。平台 Transport 获取的 SID、UID/GID 和 PID
+是对端身份来源；消息中的同名字段仅用于诊断。若产品要求校验可执行文件，必须在
+获得进程句柄后校验签名/路径，并明确 TOCTOU 限制。
 
-- Create
-- Validate
-- Heartbeat
-- Timeout
-- Max Session
-- Destroy
+## 5. 配置与限制
 
-## 6. MachineManager
+必须可配置且有安全默认值：
 
-负责：
+- License、trust key 和 state 路径
+- IPC endpoint 与允许的用户/组
+- 最大连接、握手、Session、Frame 和队列数量
+- connect/read/write/idle deadline
+- Heartbeat、timeout、Grace 参数的允许范围
+- 日志级别和审计输出
 
-- 收集平台身份
-- 标准化
-- 计算指纹
-- 容错匹配
+测试用 TCP 和调试绕过项必须由构建或独立配置显式开启，发布配置默认不存在。
 
-## 7. StateStorage
+## 6. License 更新
 
-保存：
-
-- Last valid time
-- Activation state
-- License metadata
-- Sync metadata
-
-不应明文保存：
-
-- 私钥
-- Session key 日志
-- 用户密码
-
-## 8. 运行方式
-
-Windows：
-
-第一版：
-
-```text
-LicenseService.exe
-```
-
-正式部署可扩展：
-
-```text
-Windows Service
-```
-
-Linux：
-
-```text
-systemd / OpenRC service
-```
-
-macOS：
-
-```text
-launchd
-```
-
-## 9. Service 启动
-
-```text
-Load Config
-   ↓
-Load Public Keys
-   ↓
-Load License
-   ↓
-Load State
-   ↓
-Verify Environment
-   ↓
-Start IPC
-```
-
-## 10. Service Shutdown
-
-应：
-
-- Stop Accept
-- Notify Clients
-- Flush State
-- Destroy Sessions
-- Close Transport
+LicenseManager 对候选文件完整验证后才原子切换。切换与 Session 重算应在同一逻辑
+事务中产生有序事件。无效候选保留当前有效 License，并记录不包含敏感数据的错误。

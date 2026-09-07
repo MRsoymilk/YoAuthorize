@@ -1,112 +1,39 @@
 # 06. Machine Identity
 
-## 1. 目标
+Machine Identity 是授权策略，不是密码学身份。采集失败不得静默降级为 Unbound。
 
-License 可选择绑定特定设备，但必须避免因单个硬件变化导致授权频繁失效。
+## 1. MVP 数据源
 
-## 2. 可选指纹来源
+- Windows：MachineGuid、SMBIOS/System UUID、系统盘标识。
+- Linux：`/etc/machine-id`、DMI product UUID、系统盘标识。
+- macOS（后续）：IOPlatformUUID。
 
-### Windows
+MAC 地址、IP、hostname 和 CPU 型号字符串变化频繁或易伪造，不作为独立绑定依据。
 
-- MachineGuid
-- SMBIOS UUID
-- 主板 UUID
-- 系统盘序列号
-- TPM Identity（如适用）
-- CPU 信息
+## 2. 规范化与 Hash
 
-### Linux
+每个组件按类型独立处理：
 
-- /etc/machine-id
-- DMI product UUID
-- 主板信息
-- 系统盘标识
-- TPM（如适用）
+1. 读取原始值并验证来源与权限。
+2. trim，统一 ASCII 大小写，移除该类型规定的分隔符。
+3. 空值、默认厂商值和读取错误标记为 Missing，不写入空字符串。
+4. 计算 `SHA-256("YOAUTHORIZE-MACHINE-COMPONENT-V1" || type || length || value)`。
 
-### macOS
+Exact Machine ID 对排序后的组件 Hash 做长度前缀拼接，再使用独立 domain separator
+计算 SHA-256。输出编码固定为小写十六进制。
 
-- Platform UUID
-- Hardware UUID
+类型、排序、长度编码和缺失值策略必须形成测试向量，不能依赖容器遍历顺序或本地
+区域设置。
 
-## 3. 不推荐单独使用
+## 3. 策略
 
-- MAC Address
-- CPU 型号字符串
-- hostname
-- IP 地址
+- MVP 的 `Exact` 要求当前 Machine ID 与 License 中的 opaque ID 完全相同。
+- 重装系统、换盘和主板维修通过重新签发或受控迁移处理。
+- `Tolerant` 模式后续实现，必须基于 License 中已签名的组件 Hash、权重和阈值。
+- VM 是否允许、是否绑定 VM UUID、是否允许克隆是产品级显式策略。
 
-这些信息可变或容易伪造。
+## 4. 隐私与日志
 
-## 4. 标准化
-
-所有字段必须：
-
-- trim
-- uppercase/lowercase 统一
-- 去除无意义分隔符
-- 处理缺失值
-
-然后再 Hash。
-
-## 5. 基础 Machine ID
-
-例如：
-
-```text
-SHA256(
-    platform_uuid
-    || machine_guid
-    || disk_id
-)
-```
-
-## 6. 容错匹配
-
-推荐评分策略，而非所有字段必须完全一致。
-
-示例：
-
-```text
-BIOS / Platform UUID    40%
-Machine GUID            30%
-Disk Serial             20%
-CPU / Board             10%
-```
-
-阈值：
-
-```text
->= 70%
-```
-
-认为同一设备。
-
-## 7. 迁移策略
-
-应设计：
-
-- 重装系统
-- 更换系统盘
-- 主板维修
-- VM 克隆
-- 云主机变化
-
-对应的：
-
-- 手工解绑
-- 管理员迁移
-- 在线重新激活
-- 有限次数换机
-
-## 8. 虚拟机
-
-需要明确产品政策：
-
-- 是否允许 VM
-- 是否允许克隆
-- 是否绑定 VM UUID
-- 是否要求在线校验
-
-## 9. 安全定位
-
-Machine Fingerprint 主要用于授权策略，不应被视为强密码学身份。
+- 原始硬件标识只在采集和 Hash 期间存在，不写入普通日志。
+- License Generator、诊断工具和 Service 展示 Machine ID 前应提示其稳定标识属性。
+- 错误日志只记录组件类型和状态，不记录原始序列号。

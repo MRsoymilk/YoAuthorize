@@ -1,161 +1,57 @@
-# 10. Threat Model 与安全设计
+# 10. 威胁模型
 
-## 1. 安全目标
+## 1. 边界
 
-本系统目标是：
+目标是阻止 License 篡改、跨机器复制、伪造 Service、IPC 重放和简单单点 Patch，
+并提高在用户控制的本机上绕过授权的成本。系统不承诺客户端绝对不可破解。
 
-> 提高绕过授权的成本。
+信任：
 
-不是：
+- 受控签发环境中的 License 私钥。
+- SDK 内置的 Service 身份公钥。
+- 正确配置的 Service 账户、IPC ACL 和系统密码学实现。
 
-> 声称客户端软件绝对不可破解。
+不信任：
 
-用户完全控制本地机器时，理论上仍可能：
+- IPC 输入、License 文件、客户端自报 PID/路径/时间。
+- 普通用户可修改的配置、环境变量和目录。
+- 应用进程内存及完全控制本机的管理员/root。
 
-- Debug
-- Patch
-- Hook
-- DLL 注入
-- 内存修改
-- Fake Service
-- 二进制重写
+## 2. 威胁与基线防护
 
-## 2. 威胁：修改 License
+| Threat | Required control |
+|---|---|
+| 修改 License | Ed25519 签名覆盖原始 Payload |
+| 复制 License | 明确的 Machine Policy |
+| Fake Service | 独立 Service 身份签名和 SDK pinning |
+| IPC 窃听/修改 | X25519 + HKDF + ChaCha20-Poly1305 |
+| Replay/乱序 | 每方向严格递增 Sequence |
+| 未授权本地进程 | Named Pipe ACL / Unix peer credentials |
+| 多实例竞态 | 原子 Session 配额分配 |
+| Service 终止 | Heartbeat、Grace、重连和安全降级 |
+| 系统时间回拨 | protected last-valid time；后续可信时间 |
+| 畸形输入 | 长度上限、FlatBuffers Verifier、状态机校验 |
 
-攻击：
+Server Authentication 和 AEAD 是发布版必需能力，不是可选加固。
 
-```text
-修改 expire_time / features
-```
+## 3. 已知限制
 
-防护：
+- 客户端没有可安全隐藏的长期 secret，Service 不能仅凭协议证明应用未被修改。
+- 管理员/root 可以调试、Hook、替换 SDK 或 Patch 业务判断。
+- 本地 `last_valid_time` 只能检测部分时间回拨，不能替代在线可信时间或 TPM。
+- Machine ID 是授权策略，不能证明设备具有不可克隆的硬件身份。
 
-```text
-Ed25519 Signature
-```
+因此应用应在多个关键功能点检查 Feature，并让授权派生状态参与资源解锁。单个
+`if (licensed)` 仍然容易被 Patch。
 
-## 3. 威胁：复制 License
+## 4. 数据保护
 
-攻击：
+- 不记录私钥、Session Key、shared secret、完整 License 或原始硬件标识。
+- 错误响应不区分 AEAD、签名或密钥细节，详细原因只进入受限本地审计日志。
+- State 和 trust key 目录由 Service 账户控制，采用原子写入和权限检查。
+- 崩溃转储和诊断模式不得默认包含密码学上下文。
 
-```text
-复制到另一台机器
-```
+## 5. 后续加固
 
-防护：
-
-```text
-Machine Binding
-```
-
-## 4. 威胁：Fake LicenseService
-
-攻击：
-
-```text
-自己实现 IPC Server
-永远返回 Valid
-```
-
-防护：
-
-- Server Authentication
-- Challenge-Response
-- 服务端签名
-- Session Key
-
-## 5. 威胁：IPC Replay
-
-攻击：
-
-```text
-录制一次合法 Heartbeat/Auth
-重复发送
-```
-
-防护：
-
-- Session
-- Sequence
-- Nonce
-- MAC
-- Timestamp（辅助）
-
-## 6. 威胁：Patch 单个 bool
-
-攻击：
-
-```cpp
-if (!licensed) exit();
-```
-
-改成永远通过。
-
-防护：
-
-- 多点 Feature 检查
-- Session 长期参与
-- 授权数据参与关键资源解锁
-- 不使用唯一单点布尔判断
-
-## 7. 威胁：系统时间回拨
-
-防护：
-
-- last_valid_time
-- server trusted time
-- rollback detection
-- 在线同步
-
-## 8. 威胁：多实例
-
-防护：
-
-```text
-max_sessions
-```
-
-并绑定：
-
-- PID
-- process start time
-- client identity
-
-## 9. 威胁：Service 被终止
-
-防护不是“立即杀业务程序”，而是：
-
-```text
-Heartbeat timeout
-→ Reconnect
-→ Grace Period
-→ Safe Shutdown
-```
-
-## 10. 威胁：SDK 被 Hook
-
-不能完全避免。
-
-可提高成本：
-
-- 关键校验分散
-- 完整性检查
-- 关键资源加密
-- Session 派生数据参与算法
-- 发布版符号控制
-- 代码混淆（后期）
-
-## 11. 客户端加固属于第二层
-
-授权协议先保证正确。
-
-后续再考虑：
-
-- Anti-Debug
-- Anti-Hook
-- Obfuscation
-- Integrity Check
-- VM Protection
-- Hardware Dongle
-
-这些不能替代密码学与协议设计。
+代码完整性、混淆、Anti-Debug、Anti-Hook、TPM 和硬件 Dongle 是第二层措施，必须
+在协议与密钥管理正确后按商业价值选择，不能替代基线防护。

@@ -1,142 +1,60 @@
 # 00. 项目概述
 
-## 1. 项目目标
+## 1. 范围
 
-设计一套独立的软件授权系统，对一个或多个目标应用程序实施授权控制，同时尽可能降低业务程序的接入侵入性。
+YoAuthorize 是本地软件授权系统。独立的 License Service 验证 License，
+维护授权 Session，并通过 SDK 向一个或多个应用提供功能权限。
 
-目标包括：
+首个可交付版本包括：
 
-- 本地 License 校验
-- License 数字签名
-- 机器绑定
-- 有效期控制
-- 功能级授权
-- 多实例限制
-- Session 管理
-- Heartbeat
-- 授权状态动态变化
-- 授权吊销
-- 离线授权
-- 后续在线激活
-- 多语言 SDK
-- 多平台 IPC
+- 离线 License 加载与 Ed25519 验签
+- 产品、有效期和机器绑定检查
+- Feature Set 和最大并发 Session
+- 本地 IPC、服务身份认证、Session 与 Heartbeat
+- 原生 C++ SDK、License Generator 和测试应用
 
-## 2. 核心设计原则
+在线激活、远程吊销、可信时间、多语言 SDK 和客户端加固不属于首个 MVP。
 
-### 2.1 协议优先
+## 2. 核心原则
 
-业务程序只依赖统一的 License Protocol 与 SDK，不依赖具体 IPC 技术。
+### SDK 是应用边界
 
 ```text
-Application
-    ↓
-License SDK
-    ↓
-License Protocol
-    ↓
-Transport
+Application -> C++ SDK -> Wire Protocol -> IPC -> License Service
 ```
 
-### 2.2 Transport 与 Protocol 分离
+应用不得直接解析 License、构造 FlatBuffers 消息或管理 Session Key。
 
-Transport 负责“怎么传”：
+### Protocol 与 Transport 分离
 
-- Windows Named Pipe
-- Unix Domain Socket
-- TCP Loopback
+- Transport 只传输有边界的字节帧。
+- Frame 负责长度、版本、序列号和记录保护。
+- FlatBuffers Payload 表达请求、响应和事件。
+- Core 决定 License、机器、Feature 和 Session 策略。
 
-Protocol 负责“传什么”：
+### 授权是持续状态
 
-- Hello
-- Challenge
-- Authenticate
-- Session
-- Heartbeat
-- Feature
-- License State
-- Error
+授权结果不是一个启动时计算后永久有效的 `bool`。SDK 持有 Session，内部维护
+Heartbeat，并向应用暴露 `Valid`、`Grace`、`Expired`、`Revoked` 等状态。
 
-### 2.3 授权结果不是简单 bool
+### 明确安全边界
 
-不推荐：
-
-```cpp
-if (!licenseCheck())
-    exit(0);
-```
-
-推荐由授权服务创建持续存在的 Session，并返回：
-
-- Session ID
-- Session Key
-- Feature Mask
-- Expire Time
-- Server Nonce
-- Signature / MAC
-
-授权信息参与后续业务运行。
-
-### 2.4 业务低侵入
-
-业务侧最好只需要：
-
-```cpp
-LicenseClient client;
-if (!client.initialize("PRODUCT_A"))
-    return -1;
-```
-
-功能授权：
-
-```cpp
-if (client.hasFeature(FEATURE_FFT)) {
-    enableFFT();
-}
-```
+本地用户可能控制应用进程和机器。系统目标是提高伪造、重放和篡改成本，而不是
+承诺客户端不可破解。序列化格式不提供安全性，安全属性来自签名、认证密钥交换、
+AEAD、操作系统 IPC 权限和业务侧的多点 Feature 检查。
 
 ## 3. 系统角色
 
-```text
-LicenseGenerator
-    │
-    └── 生成并签名 License
+- License Generator：离线生成并签名 License，只在受控环境持有签发私钥。
+- License Service：验证 License 和机器，管理 Session、Heartbeat 与 IPC。
+- C++ SDK：连接 Service，执行握手，维护 Session，向应用提供稳定 API。
+- Application：根据 SDK 状态和 Feature Set 控制业务能力。
+- License Server：后续提供在线激活、吊销和可信时间，不属于 MVP。
 
-LicenseService
-    │
-    ├── 验证 License
-    ├── 管理 Session
-    ├── 处理 Heartbeat
-    ├── 管理 Feature
-    └── 处理 IPC
+## 4. 平台与语言
 
-LicenseSDK
-    │
-    └── 为应用提供统一 API
-
-Application
-    │
-    └── 业务逻辑
-
-LicenseServer（后续）
-    │
-    ├── 激活
-    ├── 设备管理
-    ├── 吊销
-    └── 在线同步
-```
-
-## 4. 推荐技术路线
-
-第一阶段推荐：
-
-- Protocol Buffers
-- Rust LicenseService
-- Windows Named Pipe
-- Linux/macOS Unix Domain Socket
-- Ed25519
-- Machine ID
-- Session + Heartbeat
-- C ABI
-- C++ TestApp
-
-Qt 可以继续用于 TestApp，但不进入授权系统核心依赖。
+- 当前主实现语言：C++20。
+- MVP 平台：Windows、Linux。
+- 后续平台：macOS，复用 Unix Domain Socket Transport。
+- 后续语言 SDK：先提供稳定 C ABI，再提供语言包装。
+- Qt 只能用于示例 UI，不进入 Core、Protocol 或 SDK Core。

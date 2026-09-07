@@ -1,198 +1,73 @@
 # 11. 测试方案
 
-## 1. 测试目标
+本文件定义目标授权系统的验收范围，不是当前根目录 CMake 测试的运行说明。
 
-验证：
+## 1. 必需层级
 
-- 正确性
-- 兼容性
-- 稳定性
-- 异常恢复
-- 基本安全性
+- Unit：Core 策略、状态机、时间和错误映射。
+- Protocol：Frame、FlatBuffers、版本兼容和 Golden Vectors。
+- Crypto：标准向量、握手 transcript、密钥派生、AEAD 和签名。
+- Transport：partial IO、超时、ACL/peer credentials 和资源限制。
+- Integration：Generator -> Service -> SDK -> TestApp 完整链路。
+- Failure/Security：崩溃、重放、Fake Service、畸形输入和时间回拨。
+- Platform：Windows、Linux；macOS 支持后加入同一兼容矩阵。
 
-## 2. 测试层级
+## 2. Golden Vectors
 
-```text
-Unit Test
-Protocol Test
-Crypto Test
-IPC Test
-Integration Test
-Failure Test
-Security Test
-Cross-platform Test
-```
+`test/vectors/` 应保存并版本化：
 
-## 3. TestApp
+- 每种消息的合法 Frame 和 FlatBuffer Payload
+- License 签名输入、合法/错误签名和 key rotation 样本
+- Machine ID 规范化输入与结果
+- X25519、HKDF、nonce、ChaCha20-Poly1305 和 transcript 样本
+- 前一协议版本生成的数据
 
-建议创建独立 TestApp，显示：
+测试必须验证精确字节，不只验证解析后的字段相等。
 
-```text
-Service State
-License State
-Product
-Machine ID
-Expire Time
-Session ID
-Heartbeat State
-Feature List
-Last Error
-```
+## 3. Protocol 与输入安全
 
-## 4. 正常授权
+覆盖：
 
-条件：
+- partial/coalesced Frame、EOF 和 deadline
+- 错误 Magic、版本、Flags、Sequence 和长度溢出
+- Payload 超限、截断、错误 file identifier 和 Verifier 失败
+- 未知消息、错误状态下的消息、重复 request ID
+- 降级尝试、Tag 修改、重放、乱序和 Sequence 边界
+- FlatBuffers Schema 向前/向后兼容
 
-```text
-License valid
-Machine match
-Not expired
-```
+对 Frame Header、FlatBuffers Payload 和 LicensePackage 持续 Fuzz；任何输入都不得
+导致越界、未受控分配、断言退出或泄露密码学错误细节。
 
-期望：
+## 4. License 与机器
 
-```text
-Session created
-Heartbeat OK
-Features correct
-```
+- 缺失、损坏、超限、错误 key ID、错误签名和错误产品
+- `not_before`、到期、Permanent 和时间回拨
+- Exact Machine ID 匹配/不匹配及组件缺失
+- Feature 增减、未知 Feature 和 `max_sessions` 边界
+- 文件写到一半、符号链接替换、无效热更新和原子切换
 
-## 5. License 缺失
+## 5. Session 与恢复
 
-期望：
+- 正常授权、Heartbeat、主动关闭和超时清理
+- 并发创建 Session 时不突破 `max_sessions`
+- Service 崩溃后 SDK 进入 Grace、退避重连并重新授权
+- Grace 到期 fail closed，恢复后状态和 Feature 原子更新
+- 慢客户端、发送队列溢出和连接/握手上限
 
-```text
-LICENSE_NOT_FOUND / INVALID_LICENSE
-```
+## 6. 身份与平台
 
-## 6. License 被修改
+- SDK 拒绝未知或错误 Service 身份签名。
+- Named Pipe ACL 拒绝未授权 token；Unix Socket 验证 UID/GID/PID。
+- TCP 调试模式只绑定 Loopback，发布配置无法意外启用。
+- 所有支持平台读取相同 Golden Vectors 并产生相同协议结果。
 
-修改：
+## 7. MVP 验收
 
-```text
-expire_time
-features
-machine_id
-```
+MVP 完成必须同时满足：
 
-期望：
-
-```text
-INVALID_SIGNATURE
-```
-
-## 7. License 过期
-
-期望：
-
-```text
-EXPIRED_LICENSE
-```
-
-## 8. Machine 不一致
-
-复制 License 到另一设备。
-
-期望：
-
-```text
-MACHINE_MISMATCH
-```
-
-## 9. Service 崩溃
-
-步骤：
-
-1. 启动 TestApp
-2. Session 正常
-3. 强制终止 LicenseService
-4. 观察 Heartbeat
-5. 重启 LicenseService
-
-验证：
-
-- 超时
-- Grace Period
-- 自动重连
-- Session 重建
-- 不发生业务数据损坏
-
-## 10. Feature 动态变化
-
-运行时：
-
-```text
-FFT ON → OFF
-```
-
-期望：
-
-```text
-FeatureChanged
-```
-
-业务立即禁用功能。
-
-## 11. 多实例
-
-License：
-
-```text
-max_sessions = 1
-```
-
-启动两个 App。
-
-期望第二个：
-
-```text
-SESSION_LIMIT_EXCEEDED
-```
-
-## 12. Replay Test
-
-重复发送旧：
-
-- Auth
-- Heartbeat
-- Session message
-
-期望被：
-
-```text
-sequence / nonce
-```
-
-拒绝。
-
-## 13. Fake Service Test
-
-构造假的 IPC Server。
-
-若 SDK 开启 Server Authentication，应拒绝。
-
-## 14. Fuzz Test
-
-重点 Fuzz：
-
-- Frame Header
-- Length
-- Command
-- Protobuf Payload
-- Invalid MAC
-- Huge Payload
-- Truncated Frame
-
-Rust Service 也必须认为 IPC 输入不可信。
-
-## 15. 性能
-
-授权系统不属于高吞吐业务。
-
-建议关注：
-
-- IPC connect latency
-- auth latency
-- heartbeat CPU
-- service memory
-- 100/1000 client 并发（按产品需求）
+- 修改 License 任意签名字段后验证失败。
+- 机器、产品、时间和 Feature 策略符合测试向量。
+- Fake Service、Replay 和畸形 Frame 被拒绝。
+- Service 重启后 SDK 可在 Grace 内重新授权；失败时安全降级。
+- 并发 Session 限制没有竞态超发。
+- Windows/Linux 集成测试和 Sanitizer 构建通过。
