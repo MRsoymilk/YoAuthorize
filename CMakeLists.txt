@@ -38,6 +38,10 @@ add_subdirectory(src/ya_license_protocol)
 add_subdirectory(src/ya_license_transport)
 add_subdirectory(src/ya_license_core)
 
+if(BUILD_TESTING)
+  add_subdirectory(test/authorization)
+endif()
+
 if(YOAUTHORIZE_BUILD_SDK)
   add_subdirectory(src/ya_license_sdk)
 endif()

@@ -1,0 +1,122 @@
+namespace yoauthorize.protocol;
+
+enum ErrorCode : ushort {
+  None = 0,
+  InvalidFrame = 1001,
+  UnsupportedVersion = 1002,
+  UnsupportedMessage = 1003,
+  LicenseNotFound = 2001,
+  InvalidLicense = 2002,
+  InvalidSignature = 2003,
+  NotYetValid = 2004,
+  Expired = 2005,
+  MachineMismatch = 2006,
+  ProductMismatch = 2007,
+  Revoked = 2008,
+  InvalidSession = 3001,
+  SessionExpired = 3002,
+  SessionLimitExceeded = 3003,
+  DuplicateRequest = 3004,
+  AuthenticationFailed = 4001,
+  ServiceIdentityInvalid = 4002,
+  InternalError = 5001,
+  StorageError = 5002
+}
+
+enum LicenseState : byte {
+  Unknown = 0,
+  Valid = 1,
+  Grace = 2,
+  Expired = 3,
+  Revoked = 4
+}
+
+table ClientHello {
+  min_protocol_version:ushort;
+  max_protocol_version:ushort;
+  client_nonce:[ubyte];
+  ephemeral_public_key:[ubyte];
+  sdk_version:string;
+}
+
+table ServerHello {
+  selected_protocol_version:ushort;
+  server_nonce:[ubyte];
+  ephemeral_public_key:[ubyte];
+  service_key_id:string;
+  signature:[ubyte];
+}
+
+table UnsupportedVersion {
+  min_protocol_version:ushort;
+  max_protocol_version:ushort;
+}
+
+table ClientFinished {
+  transcript_hash:[ubyte];
+}
+
+table Authorize {
+  product_id:string;
+  process_id:ulong;
+  process_start_time:ulong;
+}
+
+table AuthResult {
+  error:ErrorCode = None;
+  session_id:[ubyte];
+  features:[string];
+  expire_time:ulong;
+  heartbeat_interval_ms:uint;
+  heartbeat_timeout_ms:uint;
+}
+
+table Heartbeat {
+  session_id:[ubyte];
+}
+
+table HeartbeatAck {
+  state:LicenseState = Unknown;
+  features:[string];
+  expire_time:ulong;
+}
+
+table QueryLicense {}
+table QueryFeatures {}
+table CloseSession {}
+table LicenseChanged {}
+table FeatureChanged { features:[string]; }
+table LicenseExpired {}
+table LicenseRevoked {}
+table Ping {}
+table Error { code:ErrorCode = InternalError; message:string; }
+
+union Message {
+  ClientHello,
+  ServerHello,
+  UnsupportedVersion,
+  ClientFinished,
+  Authorize,
+  AuthResult,
+  Heartbeat,
+  HeartbeatAck,
+  QueryLicense,
+  QueryFeatures,
+  CloseSession,
+  LicenseChanged,
+  FeatureChanged,
+  LicenseExpired,
+  LicenseRevoked,
+  Ping,
+  Error
+}
+
+table Envelope {
+  protocol_version:ushort;
+  request_id:ulong;
+  body:Message;
+}
+
+root_type Envelope;
+file_identifier "YAMS";
+file_extension "yams";
