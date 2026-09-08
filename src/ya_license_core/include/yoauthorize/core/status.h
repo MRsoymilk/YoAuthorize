@@ -13,6 +13,7 @@ enum class ErrorCode {
   Expired,
   ProductMismatch,
   MachineMismatch,
+  MachineIdentityUnavailable,
   SessionLimitExceeded,
   InvalidSession,
   InternalError,

@@ -28,6 +28,7 @@ gtest_discover_tests(test_license_crypto)
 
 add_executable(test_license_core
   test_license.cpp
+  test_machine_identity.cpp
   test_session.cpp
 )
 target_include_directories(test_license_core PRIVATE

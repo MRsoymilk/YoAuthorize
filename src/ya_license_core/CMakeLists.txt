@@ -1,5 +1,6 @@
 add_library(ya_license_core STATIC
   src/license.cpp
+  src/machine_identity.cpp
   src/session.cpp
 )
 add_library(YoAuthorize::core ALIAS ya_license_core)
