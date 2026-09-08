@@ -47,12 +47,12 @@ if(YOAUTHORIZE_BUILD_SDK)
   add_subdirectory(src/ya_license_sdk)
 endif()
 
-if(BUILD_TESTING)
-  add_subdirectory(test/authorization)
+if(YOAUTHORIZE_BUILD_TOOLS)
+  add_subdirectory(tools/license_generator)
 endif()
 
-if(YOAUTHORIZE_BUILD_TOOLS)
-  message(STATUS "YoAuthorize tools are not implemented yet")
+if(BUILD_TESTING)
+  add_subdirectory(test/authorization)
 endif()
 
 if(YOAUTHORIZE_BUILD_LEGACY)
