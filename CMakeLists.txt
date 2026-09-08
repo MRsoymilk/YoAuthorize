@@ -31,6 +31,7 @@ endif()
 option(YOAUTHORIZE_BUILD_SERVICE "Build the license service" ON)
 option(YOAUTHORIZE_BUILD_SDK "Build the native C++ SDK" ON)
 option(YOAUTHORIZE_BUILD_TOOLS "Build license tools" OFF)
+option(YOAUTHORIZE_BUILD_SAMPLES "Build sample applications" OFF)
 option(YOAUTHORIZE_BUILD_LEGACY "Build legacy prototype modules" OFF)
 
 add_subdirectory(src/global)
@@ -49,6 +50,13 @@ endif()
 
 if(YOAUTHORIZE_BUILD_TOOLS)
   add_subdirectory(tools/license_generator)
+endif()
+
+if(YOAUTHORIZE_BUILD_SAMPLES)
+  if(NOT TARGET YoAuthorize::sdk)
+    message(FATAL_ERROR "YOAUTHORIZE_BUILD_SAMPLES requires YOAUTHORIZE_BUILD_SDK=ON")
+  endif()
+  add_subdirectory(samples/TestYoQt)
 endif()
 
 if(BUILD_TESTING)
