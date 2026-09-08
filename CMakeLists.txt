@@ -43,12 +43,12 @@ if(YOAUTHORIZE_BUILD_SERVICE)
   add_subdirectory(src/ya_license_service)
 endif()
 
-if(BUILD_TESTING)
-  add_subdirectory(test/authorization)
-endif()
-
 if(YOAUTHORIZE_BUILD_SDK)
   add_subdirectory(src/ya_license_sdk)
+endif()
+
+if(BUILD_TESTING)
+  add_subdirectory(test/authorization)
 endif()
 
 if(YOAUTHORIZE_BUILD_TOOLS)
