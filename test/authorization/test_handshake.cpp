@@ -24,14 +24,15 @@ TEST(HandshakeTest, EncodesVersionsAndKeyIdDeterministically) {
   const auto encoded = crypto::encodeTranscript(transcript);
 
   constexpr std::string_view domain = "YOAUTHORIZE-SERVICE-HANDSHAKE-V1";
-  ASSERT_GT(encoded.size(), domain.size() + 6);
-  EXPECT_TRUE(std::equal(domain.begin(), domain.end(), encoded.begin()));
-  EXPECT_EQ(encoded[domain.size()], 0);
-  EXPECT_EQ(encoded[domain.size() + 1], 1);
-  EXPECT_EQ(encoded[domain.size() + 2], 0);
-  EXPECT_EQ(encoded[domain.size() + 3], 3);
-  EXPECT_EQ(encoded[domain.size() + 4], 0);
-  EXPECT_EQ(encoded[domain.size() + 5], 2);
+  ASSERT_TRUE(encoded);
+  ASSERT_GT(encoded.value.size(), domain.size() + 6);
+  EXPECT_TRUE(std::equal(domain.begin(), domain.end(), encoded.value.begin()));
+  EXPECT_EQ(encoded.value[domain.size()], 0);
+  EXPECT_EQ(encoded.value[domain.size() + 1], 1);
+  EXPECT_EQ(encoded.value[domain.size() + 2], 0);
+  EXPECT_EQ(encoded.value[domain.size() + 3], 3);
+  EXPECT_EQ(encoded.value[domain.size() + 4], 0);
+  EXPECT_EQ(encoded.value[domain.size() + 5], 2);
 
   const auto first_hash = crypto::hashTranscript(transcript);
   ASSERT_TRUE(first_hash);
@@ -39,6 +40,33 @@ TEST(HandshakeTest, EncodesVersionsAndKeyIdDeterministically) {
   const auto second_hash = crypto::hashTranscript(transcript);
   ASSERT_TRUE(second_hash);
   EXPECT_NE(first_hash.value, second_hash.value);
+}
+
+TEST(HandshakeTest, RejectsInvalidServiceKeyId) {
+  crypto::HandshakeTranscript transcript;
+  EXPECT_EQ(crypto::encodeTranscript(transcript).error,
+            crypto::CryptoError::InvalidInput);
+}
+
+TEST(HandshakeTest, DerivesIndependentDirectionalKeys) {
+  crypto::Key shared_secret{};
+  crypto::Sha256Digest transcript_hash{};
+  for (std::size_t i = 0; i < shared_secret.size(); ++i) {
+    shared_secret[i] = static_cast<std::uint8_t>(i);
+    transcript_hash[i] = static_cast<std::uint8_t>(31 - i);
+  }
+
+  const auto first = crypto::deriveSessionKeys(shared_secret, transcript_hash);
+  const auto second = crypto::deriveSessionKeys(shared_secret, transcript_hash);
+
+  ASSERT_TRUE(first);
+  ASSERT_TRUE(second);
+  EXPECT_EQ(first.value.client_to_service.key,
+            second.value.client_to_service.key);
+  EXPECT_NE(first.value.client_to_service.key,
+            first.value.service_to_client.key);
+  EXPECT_NE(first.value.client_to_service.nonce_salt,
+            first.value.service_to_client.nonce_salt);
 }
 
 TEST(HandshakeTest, BuildsDirectionalRecordNonce) {
