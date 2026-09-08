@@ -1,3 +1,20 @@
+add_library(ya_license_service STATIC
+  src/config.cpp
+  src/key_store.cpp
+)
+add_library(YoAuthorize::service ALIAS ya_license_service)
+
+target_include_directories(ya_license_service PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(ya_license_service PUBLIC
+  YoAuthorize::core
+  YoAuthorize::crypto
+)
+target_link_libraries(ya_license_service PRIVATE
+  tomlplusplus::tomlplusplus
+)
+
 add_executable(yoauthorize-service main.cpp)
 
 target_include_directories(yoauthorize-service PRIVATE ${PROJECT_BINARY_DIR})
@@ -6,4 +23,5 @@ target_link_libraries(yoauthorize-service PRIVATE
   YoAuthorize::crypto
   YoAuthorize::protocol
   YoAuthorize::transport
+  YoAuthorize::service
 )

@@ -21,6 +21,7 @@ set(FLATBUFFERS_INSTALL OFF CACHE BOOL "" FORCE)
 set(FLATBUFFERS_BUILD_FLATLIB OFF CACHE BOOL "" FORCE)
 set(FLATBUFFERS_BUILD_FLATC ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/flatbuffers EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/tomlplusplus EXCLUDE_FROM_ALL)
 
 if(BUILD_TESTING)
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -38,16 +39,16 @@ add_subdirectory(src/ya_license_protocol)
 add_subdirectory(src/ya_license_transport)
 add_subdirectory(src/ya_license_core)
 
+if(YOAUTHORIZE_BUILD_SERVICE)
+  add_subdirectory(src/ya_license_service)
+endif()
+
 if(BUILD_TESTING)
   add_subdirectory(test/authorization)
 endif()
 
 if(YOAUTHORIZE_BUILD_SDK)
   add_subdirectory(src/ya_license_sdk)
-endif()
-
-if(YOAUTHORIZE_BUILD_SERVICE)
-  add_subdirectory(src/ya_license_service)
 endif()
 
 if(YOAUTHORIZE_BUILD_TOOLS)
@@ -82,7 +83,6 @@ if(YOAUTHORIZE_BUILD_LEGACY)
   endif()
 
   if(ENABLE_YA_CONFIG)
-    add_subdirectory(vendor/tomlplusplus)
     add_subdirectory(src/ya_config)
     target_link_libraries(ya-net PRIVATE ya_config tomlplusplus::tomlplusplus)
   endif()
