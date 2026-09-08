@@ -41,3 +41,11 @@ target_link_libraries(test_license_core PRIVATE
 )
 
 gtest_discover_tests(test_license_core)
+
+add_executable(test_license_transport test_transport.cpp)
+target_link_libraries(test_license_transport PRIVATE
+  GTest::gtest_main
+  YoAuthorize::transport
+)
+
+gtest_discover_tests(test_license_transport)
