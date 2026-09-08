@@ -41,7 +41,7 @@ Frame 层先读取固定 20 字节 Header，校验长度后再精确读取 Paylo
 
 - 系统服务默认 Socket：`/var/run/yoauthorize/license-v1.sock`。
 - 使用 `getpeereid` 获取对端 UID/GID。
-- macOS 支持在 Windows/Linux MVP 稳定后补充。
+- macOS 在 Linux MVP 和 Windows Transport 稳定后补充。
 
 ### TCP Loopback
 

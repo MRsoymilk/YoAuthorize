@@ -9,8 +9,10 @@ YoAuthorize/
 │   ├── protocol.fbs
 │   └── license.fbs
 ├── src/
-│   ├── ya_license_core/       # License、机器、Session、密码学、存储
+│   ├── ya_license_core/       # License、机器、Session、Feature、存储
+│   ├── ya_license_crypto/     # SDK 与 Service 共用的密码学原语
 │   ├── ya_license_protocol/   # Frame、FlatBuffers 校验与生成代码适配
+│   ├── ya_license_transport/  # UDS、Named Pipe 和测试用 Loopback
 │   ├── ya_license_service/    # IPC、Dispatcher、Handler、服务入口
 │   └── ya_license_sdk/        # 原生 C++ SDK
 ├── tools/
@@ -27,8 +29,10 @@ YoAuthorize/
 
 ## 边界
 
+- `ya_license_crypto` 封装 OpenSSL 3，不包含协议或授权策略。
 - `ya_license_protocol` 只处理 Frame、Schema 和序列化，不包含授权策略。
-- `ya_license_core` 不依赖 IPC、UI 或 Service 生命周期。
+- `ya_license_transport` 只提供有序字节流和可信对端身份。
+- `ya_license_core` 不依赖 IPC、UI、Service 生命周期或 SDK。
 - `ya_license_service` 组合 Protocol、Core 和平台 Transport。
 - `ya_license_sdk` 隐藏 IPC、FlatBuffers、握手和 Heartbeat。
 - 工具可以依赖 Core 和 Protocol，生产库不得反向依赖工具。

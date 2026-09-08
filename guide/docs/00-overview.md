@@ -54,7 +54,7 @@ AEAD、操作系统 IPC 权限和业务侧的多点 Feature 检查。
 ## 4. 平台与语言
 
 - 当前主实现语言：C++20。
-- MVP 平台：Windows、Linux。
-- 后续平台：macOS，复用 Unix Domain Socket Transport。
+- MVP 平台：Linux。
+- 后续平台：Windows Named Pipe，然后是 macOS Unix Domain Socket。
 - 后续语言 SDK：先提供稳定 C ABI，再提供语言包装。
 - Qt 只能用于示例 UI，不进入 Core、Protocol 或 SDK Core。

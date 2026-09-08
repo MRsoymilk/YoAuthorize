@@ -13,18 +13,19 @@
 ## Phase 1：C++ Local License MVP
 
 - C++20 License Core、Service 和原生 C++ SDK
-- Windows Named Pipe、Linux Unix Domain Socket
+- Linux Unix Domain Socket 和 `SO_PEERCRED`
 - Service 身份认证和加密 Session
 - License Generator、Ed25519 验签和 key ID
 - Exact Machine ID、有效期、Feature Set 和 `max_sessions`
 - Heartbeat、Grace、重连和 License 原子热更新
-- C++ TestApp 与 Windows/Linux 集成测试
+- C++ TestApp 与 Linux 集成测试
 
 Phase 1 只有在 Fake Service、Replay、畸形输入和并发 Session 测试通过后才可发布。
 
 ## Phase 2：运维与平台完善
 
-- Windows Service、systemd 配置和安装程序
+- systemd 配置和 Linux 安装程序
+- Windows Named Pipe、Windows Service 和平台集成测试
 - 受保护状态、时间回拨检测、日志与审计
 - key rotation 和本地吊销列表
 - macOS Unix Domain Socket、launchd 和平台测试

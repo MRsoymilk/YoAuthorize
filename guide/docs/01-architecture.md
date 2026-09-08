@@ -21,16 +21,18 @@ License Server 不在本地授权链路的可用性关键路径中。离线 Lice
 ## 2. 依赖方向
 
 ```text
-FlatBuffers Schema
-        |
-Protocol Adapter <- Core
-        |             |
-        +------ Service
-        |
-      C++ SDK <- Application
+Crypto <------- Protocol -------> Core
+  ^                ^               |
+  |                |               v
+  +------ SDK ------+----------> Service
+           ^                ^
+           |                |
+      Application       Transport
 ```
 
 - Protocol 不得依赖授权策略、平台 API 或 UI。
+- Crypto 不得依赖 Protocol、Core、SDK 或 Service。
+- Transport 不得解析 Frame 或 FlatBuffers。
 - Core 不得依赖 IPC 和 Service 进程管理。
 - Service 和 SDK 可以依赖 Protocol，不得互相依赖内部实现。
 - Application 只依赖 SDK 的公开类型。

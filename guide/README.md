@@ -12,14 +12,14 @@
 - License 使用 Ed25519 签名。
 - Session 使用 X25519、HKDF-SHA256 和 ChaCha20-Poly1305。
 - C++ 密码学实现统一使用 OpenSSL 3.x 的高层 EVP API。
-- MVP 先提供原生 C++ SDK；协议稳定后再提供 C ABI 和其他语言包装。
+- MVP 先完成 Linux 与原生 C++ SDK；随后补充 Windows、C ABI 和其他语言包装。
 
 ## 设计目标
 
 - 授权逻辑与业务逻辑解耦，应用只依赖 SDK。
 - 支持离线 License、机器绑定、功能授权、Session 和 Heartbeat。
 - 协议、密码学和 IPC 不依赖 Qt 或其他 UI 框架。
-- 最终支持 Windows、Linux 和 macOS；首个 MVP 优先 Windows/Linux。
+- 最终支持 Windows、Linux 和 macOS；首个 MVP 只以 Linux 为交付平台。
 - 后续扩展在线激活、吊销、可信时间和多语言 SDK。
 
 ## 阅读顺序

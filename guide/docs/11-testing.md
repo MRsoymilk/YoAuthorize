@@ -10,7 +10,7 @@
 - Transport：partial IO、超时、ACL/peer credentials 和资源限制。
 - Integration：Generator -> Service -> SDK -> TestApp 完整链路。
 - Failure/Security：崩溃、重放、Fake Service、畸形输入和时间回拨。
-- Platform：Windows、Linux；macOS 支持后加入同一兼容矩阵。
+- Platform：Linux MVP；Windows 和 macOS 支持后加入同一兼容矩阵。
 
 ## 2. Golden Vectors
 
@@ -70,4 +70,4 @@ MVP 完成必须同时满足：
 - Fake Service、Replay 和畸形 Frame 被拒绝。
 - Service 重启后 SDK 可在 Grace 内重新授权；失败时安全降级。
 - 并发 Session 限制没有竞态超发。
-- Windows/Linux 集成测试和 Sanitizer 构建通过。
+- Linux 集成测试和 Sanitizer 构建通过。
