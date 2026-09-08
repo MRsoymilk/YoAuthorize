@@ -77,3 +77,8 @@ if(TARGET ya_license_sdk AND TARGET ya_license_service)
 
   gtest_discover_tests(test_license_sdk)
 endif()
+
+if(TARGET ya_license_sdk)
+  add_executable(yoauthorize-test-app test_app.cpp)
+  target_link_libraries(yoauthorize-test-app PRIVATE YoAuthorize::sdk)
+endif()
