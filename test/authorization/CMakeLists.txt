@@ -116,3 +116,38 @@ if(TARGET yoauthorize-license-generator AND
     TIMEOUT 15
   )
 endif()
+
+if(TARGET yoauthorize-license-generator AND TARGET TestYoQt)
+  add_test(
+    NAME QtAuthorizationTest.LocalLicense
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} local
+  )
+  add_test(
+    NAME QtAuthorizationTest.HttpsActivation
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} remote
+  )
+  add_test(
+    NAME QtAuthorizationTest.RejectsWrongProduct
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} local-denied
+  )
+  add_test(
+    NAME QtAuthorizationTest.RejectsActivationCode
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} remote-denied
+  )
+  set_tests_properties(
+    QtAuthorizationTest.LocalLicense
+    QtAuthorizationTest.HttpsActivation
+    QtAuthorizationTest.RejectsWrongProduct
+    QtAuthorizationTest.RejectsActivationCode
+    PROPERTIES TIMEOUT 20
+  )
+  set_tests_properties(
+    QtAuthorizationTest.RejectsWrongProduct
+    QtAuthorizationTest.RejectsActivationCode
+    PROPERTIES WILL_FAIL TRUE
+  )
+endif()
