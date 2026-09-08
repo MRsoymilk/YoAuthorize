@@ -22,6 +22,7 @@ add_custom_command(
 add_library(ya_license_protocol STATIC
   src/envelope.cpp
   src/frame.cpp
+  src/record.cpp
   ${YOAUTHORIZE_GENERATED_HEADERS}
 )
 add_library(YoAuthorize::protocol ALIAS ya_license_protocol)
@@ -33,5 +34,5 @@ target_include_directories(ya_license_protocol
 )
 target_link_libraries(ya_license_protocol
   PUBLIC FlatBuffers::FlatBuffers
-  PRIVATE YoAuthorize::crypto
+  PUBLIC YoAuthorize::crypto
 )

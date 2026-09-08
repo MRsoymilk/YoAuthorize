@@ -3,6 +3,7 @@ include(GoogleTest)
 add_executable(test_license_protocol
   test_envelope.cpp
   test_frame.cpp
+  test_record.cpp
 )
 
 target_include_directories(test_license_protocol PRIVATE
