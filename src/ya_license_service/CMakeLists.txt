@@ -1,6 +1,8 @@
 add_library(ya_license_service STATIC
   src/config.cpp
+  src/connection.cpp
   src/key_store.cpp
+  src/service.cpp
 )
 add_library(YoAuthorize::service ALIAS ya_license_service)
 
@@ -10,6 +12,8 @@ target_include_directories(ya_license_service PUBLIC
 target_link_libraries(ya_license_service PUBLIC
   YoAuthorize::core
   YoAuthorize::crypto
+  YoAuthorize::protocol
+  YoAuthorize::transport
 )
 target_link_libraries(ya_license_service PRIVATE
   tomlplusplus::tomlplusplus

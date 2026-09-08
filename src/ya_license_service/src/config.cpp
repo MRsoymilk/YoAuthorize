@@ -118,7 +118,12 @@ ConfigResult<ServiceConfig> loadConfig(const std::filesystem::path& path) {
       !assignInteger(*service, "io_timeout_ms", config.io_timeout_ms, 100,
                      60000) ||
       !assignInteger(*service, "idle_timeout_ms", config.idle_timeout_ms, 1000,
-                     3600000)) {
+                     3600000) ||
+      !assignInteger(*service, "heartbeat_interval_ms",
+                     config.heartbeat_interval_ms, 1000, 60000) ||
+      !assignInteger(*service, "heartbeat_timeout_ms",
+                     config.heartbeat_timeout_ms, 2000, 300000) ||
+      config.heartbeat_timeout_ms <= config.heartbeat_interval_ms) {
     return {.error = ConfigError::InvalidValue};
   }
 

@@ -57,6 +57,7 @@ if(TARGET ya_license_service)
   add_executable(test_license_service
     test_service_config.cpp
     test_key_store.cpp
+    test_service.cpp
   )
   target_link_libraries(test_license_service PRIVATE
     GTest::gtest_main

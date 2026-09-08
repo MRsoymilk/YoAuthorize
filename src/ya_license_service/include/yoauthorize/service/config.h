@@ -46,6 +46,8 @@ struct ServiceConfig {
   std::uint32_t handshake_timeout_ms = 5000;
   std::uint32_t io_timeout_ms = 5000;
   std::uint32_t idle_timeout_ms = 30000;
+  std::uint32_t heartbeat_interval_ms = 5000;
+  std::uint32_t heartbeat_timeout_ms = 15000;
   core::LinuxMachineIdentityConfig machine_identity;
 };
 
