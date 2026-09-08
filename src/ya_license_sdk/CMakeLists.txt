@@ -1,4 +1,7 @@
-add_library(ya_license_sdk STATIC src/client.cpp)
+add_library(ya_license_sdk STATIC
+  src/client.cpp
+  src/local_authorizer.cpp
+)
 add_library(YoAuthorize::sdk ALIAS ya_license_sdk)
 
 target_include_directories(ya_license_sdk PUBLIC
@@ -7,6 +10,7 @@ target_include_directories(ya_license_sdk PUBLIC
 target_compile_features(ya_license_sdk PUBLIC cxx_std_20)
 target_link_libraries(ya_license_sdk PUBLIC
   YoAuthorize::crypto
+  YoAuthorize::core
   YoAuthorize::protocol
   YoAuthorize::transport
 )

@@ -92,6 +92,16 @@ if(TARGET ya_license_issuer)
   )
 
   gtest_discover_tests(test_license_issuer)
+
+  if(TARGET ya_license_sdk)
+    add_executable(test_local_authorizer test_local_authorizer.cpp)
+    target_link_libraries(test_local_authorizer PRIVATE
+      GTest::gtest_main
+      YoAuthorize::issuer
+      YoAuthorize::sdk
+    )
+    gtest_discover_tests(test_local_authorizer)
+  endif()
 endif()
 
 if(TARGET yoauthorize-license-generator AND

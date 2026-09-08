@@ -30,6 +30,9 @@ enum class ClientError {
   Protocol,
   ServiceIdentityInvalid,
   AuthorizationDenied,
+  LicenseFile,
+  InvalidLicense,
+  MachineIdentity,
   AlreadyInitialized,
 };
 
