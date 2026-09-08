@@ -1,6 +1,7 @@
 #include "yoauthorize/crypto/crypto.h"
 
 #include <openssl/core_names.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/kdf.h>
 #include <openssl/params.h>
@@ -61,6 +62,12 @@ CryptoError randomBytes(std::span<std::uint8_t> output) {
   return RAND_priv_bytes(output.data(), static_cast<int>(output.size())) == 1
              ? CryptoError::None
              : CryptoError::RandomFailed;
+}
+
+void cleanse(std::span<std::uint8_t> bytes) noexcept {
+  if (!bytes.empty()) {
+    OPENSSL_cleanse(bytes.data(), bytes.size());
+  }
 }
 
 CryptoResult<Sha256Digest> sha256(std::span<const std::uint8_t> input) {

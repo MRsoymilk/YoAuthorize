@@ -22,6 +22,11 @@ std::span<const std::byte> asBytes(std::span<const std::uint8_t> bytes) {
 
 RecordWriter::RecordWriter(RecordKey key) : key_(std::move(key)) {}
 
+RecordWriter::~RecordWriter() {
+  crypto::cleanse(key_.key);
+  crypto::cleanse(key_.nonce_salt);
+}
+
 RecordResult RecordWriter::seal(std::span<const std::uint8_t> plaintext) {
   if (next_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
     return {.error = RecordError::SequenceExhausted};
@@ -57,6 +62,11 @@ RecordResult RecordWriter::seal(std::span<const std::uint8_t> plaintext) {
 }
 
 RecordReader::RecordReader(RecordKey key) : key_(std::move(key)) {}
+
+RecordReader::~RecordReader() {
+  crypto::cleanse(key_.key);
+  crypto::cleanse(key_.nonce_salt);
+}
 
 RecordResult RecordReader::open(std::span<const std::uint8_t> frame) {
   if (next_sequence_ == std::numeric_limits<std::uint64_t>::max()) {

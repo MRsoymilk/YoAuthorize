@@ -46,6 +46,7 @@ struct KeyPair {
 };
 
 CryptoError randomBytes(std::span<std::uint8_t> output);
+void cleanse(std::span<std::uint8_t> bytes) noexcept;
 CryptoResult<Sha256Digest> sha256(std::span<const std::uint8_t> input);
 
 CryptoResult<KeyPair> generateEd25519KeyPair();

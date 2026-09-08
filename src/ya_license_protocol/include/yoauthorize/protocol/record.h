@@ -33,6 +33,9 @@ struct RecordResult {
 class RecordWriter {
  public:
   explicit RecordWriter(RecordKey key);
+  ~RecordWriter();
+  RecordWriter(const RecordWriter&) = delete;
+  RecordWriter& operator=(const RecordWriter&) = delete;
   RecordResult seal(std::span<const std::uint8_t> plaintext);
   std::uint64_t nextSequence() const { return next_sequence_; }
 
@@ -44,6 +47,9 @@ class RecordWriter {
 class RecordReader {
  public:
   explicit RecordReader(RecordKey key);
+  ~RecordReader();
+  RecordReader(const RecordReader&) = delete;
+  RecordReader& operator=(const RecordReader&) = delete;
   RecordResult open(std::span<const std::uint8_t> frame);
   std::uint64_t nextSequence() const { return next_sequence_; }
 

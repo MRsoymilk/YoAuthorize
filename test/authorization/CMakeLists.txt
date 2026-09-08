@@ -3,6 +3,7 @@ include(GoogleTest)
 add_executable(test_license_protocol
   test_envelope.cpp
   test_frame.cpp
+  test_protocol_handshake.cpp
   test_messages.cpp
   test_record.cpp
 )

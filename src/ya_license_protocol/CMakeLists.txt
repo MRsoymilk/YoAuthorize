@@ -22,6 +22,7 @@ add_custom_command(
 add_library(ya_license_protocol STATIC
   src/envelope.cpp
   src/frame.cpp
+  src/handshake.cpp
   src/messages.cpp
   src/record.cpp
   ${YOAUTHORIZE_GENERATED_HEADERS}
