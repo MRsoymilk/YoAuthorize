@@ -93,3 +93,16 @@ if(TARGET ya_license_issuer)
 
   gtest_discover_tests(test_license_issuer)
 endif()
+
+if(TARGET yoauthorize-license-generator AND
+   TARGET yoauthorize-service AND
+   TARGET yoauthorize-test-app)
+  add_test(
+    NAME LocalDemoTest.FullDaemonSdkRoundTrip
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_local_demo.sh
+            ${PROJECT_BINARY_DIR} 2
+  )
+  set_tests_properties(LocalDemoTest.FullDaemonSdkRoundTrip PROPERTIES
+    TIMEOUT 15
+  )
+endif()
