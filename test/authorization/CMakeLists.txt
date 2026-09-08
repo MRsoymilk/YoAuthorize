@@ -25,3 +25,18 @@ target_link_libraries(test_license_crypto PRIVATE
 )
 
 gtest_discover_tests(test_license_crypto)
+
+add_executable(test_license_core
+  test_license.cpp
+  test_session.cpp
+)
+target_include_directories(test_license_core PRIVATE
+  ${PROJECT_BINARY_DIR}/generated
+)
+target_link_libraries(test_license_core PRIVATE
+  GTest::gtest_main
+  YoAuthorize::core
+  YoAuthorize::protocol
+)
+
+gtest_discover_tests(test_license_core)
