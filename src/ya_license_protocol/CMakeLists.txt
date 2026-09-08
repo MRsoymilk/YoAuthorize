@@ -2,4 +2,7 @@ add_library(ya_license_protocol INTERFACE)
 add_library(YoAuthorize::protocol ALIAS ya_license_protocol)
 
 target_compile_features(ya_license_protocol INTERFACE cxx_std_20)
-target_link_libraries(ya_license_protocol INTERFACE YoAuthorize::crypto)
+target_link_libraries(ya_license_protocol INTERFACE
+  FlatBuffers::FlatBuffers
+  YoAuthorize::crypto
+)

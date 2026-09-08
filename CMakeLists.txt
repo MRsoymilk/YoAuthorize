@@ -13,6 +13,20 @@ configure_file(
 
 include(CTest)
 
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
+find_package(Threads REQUIRED)
+
+set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_INSTALL OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_BUILD_FLATLIB OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_BUILD_FLATC ON CACHE BOOL "" FORCE)
+add_subdirectory(vendor/flatbuffers EXCLUDE_FROM_ALL)
+
+if(BUILD_TESTING)
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  add_subdirectory(vendor/gtest EXCLUDE_FROM_ALL)
+endif()
+
 option(YOAUTHORIZE_BUILD_SERVICE "Build the license service" ON)
 option(YOAUTHORIZE_BUILD_SDK "Build the native C++ SDK" ON)
 option(YOAUTHORIZE_BUILD_TOOLS "Build license tools" OFF)
@@ -119,7 +133,6 @@ if(YOAUTHORIZE_BUILD_LEGACY)
   endif()
 
   if(ENABLE_YA_TEST)
-    add_subdirectory(vendor/gtest)
     add_subdirectory(test)
   endif()
 endif()
