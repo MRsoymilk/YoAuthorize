@@ -17,6 +17,11 @@ docker compose --profile tools run --rm bootstrap-admin
 
 ## Compose layout
 
+For dependency-free host-run service controls, logs, and backend/all group starts,
+run `node remote/manager/server.mjs` from the repository root and open
+http://127.0.0.1:5002. See [Host Manager](../manager/README.md) for prerequisites,
+security and operation semantics. Starting the manager does not start the stack.
+
 `compose.yaml` remains the entry point for CLI and Dockge, with the project name,
 all nine services, and all shared networks, volumes, and secrets. Each service
 uses `extends` with a `file` and `service` reference to a same-directory fragment:

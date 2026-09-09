@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YoAuthorize | Host Manager</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a href="/" class="brand"><b>Y</b> YoAuthorize</a><span class="tag">HOST / DEVELOPMENT</span></header>
+  <main>
+    <section class="operation-summary" aria-label="Latest operation"><div class="section-head"><h1>Latest operation</h1><span id="job-state" role="status">Idle</span></div><p id="job-meta">No operation submitted in this manager session.</p></section>
+    <p id="error" role="alert" hidden></p>
+    <div class="workspace">
+    <section class="services-panel" aria-label="Service controls">
+    <section class="toolbar" aria-label="Group controls">
+      <div><h2>Stack actions</h2><p>Start includes dependencies. Stop keeps containers and volumes.</p></div>
+      <div class="actions"><button data-action="start" data-target="backend" class="primary">Start backend</button><button data-action="start" data-target="all" class="primary">Start all</button><button data-action="stop" data-target="backend" class="danger">Stop backend</button><button data-action="stop" data-target="all" class="danger">Stop all</button></div>
+    </section>
+    <div class="section-head"><h2>Services <span>07 + migration</span></h2><button id="refresh">Refresh status</button></div>
+    <p id="status-note" role="status">Connecting to Docker Compose...</p>
+    <section id="services" aria-label="Services"></section>
+    </section>
+    <div class="logs-panel">
+    <section class="console service-console"><div class="section-head"><h2>Service logs</h2><div class="actions"><label>Service <select id="log-service"></select></label><label>Tail <select id="log-tail"><option>100</option><option selected>200</option><option>500</option><option>1000</option></select></label><label class="live-toggle"><input id="logs-live" type="checkbox" autocomplete="off"> Live logs (3s)</label><button id="logs-refresh">Fetch logs</button></div></div><p id="log-note" role="status">Bounded snapshots. Live polling is off by default.</p><pre id="log-output" tabindex="0" aria-label="Service logs">Select a service to inspect its logs.</pre></section>
+    <section class="console operation-console"><div class="section-head"><h2>Operation output</h2></div><pre id="job-output" tabindex="0" aria-label="Operation output">Output will appear here.</pre></section>
+    </div>
+    </div>
+    <footer>Loopback only / yoauthorize / development compose<br>Stopping PostgreSQL interrupts dependent services. No delete, down, prune or secret editor.</footer>
+  </main>
+</body>
+</html>
