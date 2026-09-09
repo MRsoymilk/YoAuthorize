@@ -1,0 +1,10 @@
+services:
+  caddy:
+    ports: !override
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+
+networks:
+  dev-net: !override
+    driver: bridge

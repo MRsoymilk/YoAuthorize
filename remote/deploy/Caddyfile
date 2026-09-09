@@ -1,0 +1,23 @@
+{$PUBLIC_URL:http://localhost:8088} {
+  encode zstd gzip
+
+  handle /api/* {
+    reverse_proxy yoauthorize-api:8080
+  }
+
+  handle /health/* {
+    reverse_proxy yoauthorize-api:8080
+  }
+
+  handle /docs* {
+    reverse_proxy yoauthorize-api:8080
+  }
+
+  handle /api-docs/* {
+    reverse_proxy yoauthorize-api:8080
+  }
+
+  handle {
+    reverse_proxy yoauthorize-web:80
+  }
+}
