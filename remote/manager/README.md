@@ -4,6 +4,10 @@ Dependency-free, development-only web controls for this checkout's `yoauthorize`
 Compose project. Requires Node.js 20+ and the host's Docker CLI with Compose v2.
 No npm install, manager container, or Docker-in-Docker.
 
+The header and favicon use the manager's own `public/logo.png`, copied from
+the project's `res/logo.png`. Update this copy when changing the project logo;
+the manager never serves files from the root resource directory.
+
 From the repository root:
 
 ```sh

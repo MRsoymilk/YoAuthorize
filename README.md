@@ -1,4 +1,10 @@
-# Under Development
+<p align="center">
+  <img src="res/logo.png" alt="YoAuthorize logo" width="180">
+</p>
+
+# YoAuthorize
+
+Under Development
 
 ## Depencence
 
@@ -121,4 +127,3 @@ make install
       - message authentication code
       - digital signature
 ```
-

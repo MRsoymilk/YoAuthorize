@@ -244,7 +244,13 @@ test('HTTP smoke: explicit assets, security, body limits, logs and concurrent ac
     req.on('error', reject); req.end(body);
   });
   for (const asset of ['/', '/app.js', '/styles.css']) assert.equal((await request(asset)).status, 200);
-  for (const url of ['/server.mjs', '/.env', '/../deploy/.env', '/%2e%2e/deploy/secrets/database-url', '//evil.test', '/public/index.html']) {
+  const logo = await fetch(`http://127.0.0.1:${port}/logo.png`);
+  assert.equal(logo.status, 200);
+  assert.equal(logo.headers.get('content-type'), 'image/png');
+  assert.match(logo.headers.get('content-security-policy'), /img-src 'self'/);
+  const bytes = Buffer.from(await logo.arrayBuffer());
+  assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  for (const url of ['/server.mjs', '/.env', '/../deploy/.env', '/%2e%2e/deploy/secrets/database-url', '//evil.test', '/public/index.html', '/res/logo.png', '/public/logo.png']) {
     assert.ok([400, 404].includes((await request(url)).status));
   }
   assert.equal((await request('/api/session', { headers: { Host: 'evil.test' } })).status, 403);

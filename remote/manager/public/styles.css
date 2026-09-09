@@ -3,7 +3,7 @@
 body { margin: 0; min-width: 320px; }
 header { border-bottom: 1px solid var(--line); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; font-weight: 800; }
-.brand b { background: var(--acid); color: #10110f; padding: 6px 11px; }
+.brand img { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
 .tag, h2 span, #job-state { font: 11px ui-monospace, monospace; letter-spacing: .08em; color: var(--acid); }
 main { max-width: 1800px; padding: 18px 24px; margin: auto; }
 h1 { font-size: 17px; margin: 0; }
