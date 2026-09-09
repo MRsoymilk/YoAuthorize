@@ -8,6 +8,8 @@ services:
       - "127.0.0.1:5001:5001"
     environment:
       DOCKGE_STACKS_DIR: ${DOCKGE_ROOT:?Run start.sh}/dockge/.state/stacks
+      YOAUTHORIZE_REMOTE_DIR: ${DOCKGE_ROOT:?Run start.sh}
+      DOCKER_BUILDKIT: ${DOCKGE_BUILDKIT:-1}
       HTTP_PROXY: ""
       HTTPS_PROXY: ""
       ALL_PROXY: ""
@@ -18,11 +20,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - dockge_data:/app/data
       - ${DOCKGE_ROOT:?Run start.sh}:${DOCKGE_ROOT:?Run start.sh}
-      - ${DOCKGE_DOCKER_CONFIG:?Run start.sh}:/root/.docker:ro
+      - docker_client_data:/root/.docker
+      - ${DOCKGE_DOCKER_CONFIG:?Run start.sh}/config.json:/root/.docker/config.json:ro
     networks: [dev-net]
 
 volumes:
   dockge_data:
+  docker_client_data:
 
 networks:
   dev-net:

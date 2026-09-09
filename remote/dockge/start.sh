@@ -8,9 +8,12 @@ source "$DOCKGE_ROOT/deploy/docker-network.sh"
 
 ensure_docker_network
 mkdir -p "$script_dir/.state/stacks"
-if [[ ! -d "$DOCKGE_DOCKER_CONFIG" ]]; then
+if [[ ! -f "$DOCKGE_DOCKER_CONFIG/config.json" ]]; then
   DOCKGE_DOCKER_CONFIG="$script_dir/.state/docker-config"
   mkdir -p "$DOCKGE_DOCKER_CONFIG"
+  if [[ ! -e "$DOCKGE_DOCKER_CONFIG/config.json" ]]; then
+    printf '{}\n' >"$DOCKGE_DOCKER_CONFIG/config.json"
+  fi
 fi
 link="$script_dir/.state/stacks/yoauthorize"
 if [[ -L "$link" && "$(readlink "$link")" == "$DOCKGE_ROOT/deploy" ]]; then

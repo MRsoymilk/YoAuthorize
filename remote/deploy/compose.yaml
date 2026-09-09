@@ -43,7 +43,7 @@ services:
     image: yoauthorize-signer:local
     user: "${LOCAL_UID:-65532}:${LOCAL_GID:-65532}"
     build:
-      context: ../backend
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
       dockerfile: Dockerfile.signer
       network: ${DOCKER_BUILD_NETWORK:-default}
     environment:
@@ -67,7 +67,7 @@ services:
   migrate:
     image: yoauthorize-api:local
     build:
-      context: ../backend
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
       dockerfile: Dockerfile.api
       network: ${DOCKER_BUILD_NETWORK:-default}
     entrypoint: ["migrate"]
@@ -84,7 +84,7 @@ services:
   api:
     image: yoauthorize-api:local
     build:
-      context: ../backend
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
       dockerfile: Dockerfile.api
       network: ${DOCKER_BUILD_NETWORK:-default}
     environment:
@@ -128,7 +128,7 @@ services:
   web:
     image: yoauthorize-web:local
     build:
-      context: ../frontend
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/frontend
       dockerfile: Dockerfile
       network: ${DOCKER_BUILD_NETWORK:-default}
     read_only: true
@@ -152,7 +152,7 @@ services:
     ports:
       - "127.0.0.1:${YOAUTHORIZE_HTTP_PORT:-8088}:8088"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -174,7 +174,7 @@ services:
     image: yoauthorize-api:local
     profiles: [tools]
     build:
-      context: ../backend
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
       dockerfile: Dockerfile.api
       network: ${DOCKER_BUILD_NETWORK:-default}
     entrypoint: ["bootstrap-admin"]
@@ -191,17 +191,17 @@ services:
 
 secrets:
   postgres_password:
-    file: ./secrets/postgres-password
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/postgres-password
   database_url:
-    file: ./secrets/database-url
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/database-url
   activation_pepper:
-    file: ./secrets/activation-pepper
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/activation-pepper
   signer_shared_secret:
-    file: ./secrets/signer-shared-secret
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/signer-shared-secret
   license_signing_key:
-    file: ./secrets/license-signing-key
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/license-signing-key
   bootstrap_admin_password:
-    file: ./secrets/bootstrap-admin-password
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/bootstrap-admin-password
 
 volumes:
   postgres_data:
