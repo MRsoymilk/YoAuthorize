@@ -2,7 +2,7 @@
 
 Dependency-free, development-only web controls for this checkout's `yoauthorize`
 Compose project. Requires Node.js 20+ and the host's Docker CLI with Compose v2.
-No npm install, manager container, Docker-in-Docker, or changes to Dockge.
+No npm install, manager container, or Docker-in-Docker.
 
 From the repository root:
 
@@ -108,7 +108,7 @@ requests and localhost DNS rebinding. Use `http://127.0.0.1:PORT` or
 file-serving, secret-editing, delete or prune API. Static paths are explicit.
 All Docker executions use argument arrays and no shell. Trusted local compose
 and `.env` files still control container behavior; do not use untrusted checkouts.
-Do not operate the same stack concurrently through Dockge/CLI: the mutation lock
+Do not operate the same stack concurrently through the CLI or other tools: the mutation lock
 only covers this manager process.
 
 ## Tests

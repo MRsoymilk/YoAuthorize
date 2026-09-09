@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../deploy');
+const source = path.dirname(fileURLToPath(import.meta.url));
 const temporary = mkdtempSync(path.join(tmpdir(), 'yoauthorize-paths-'));
 const env = { ...process.env };
 delete env.YOAUTHORIZE_REMOTE_DIR;
@@ -15,7 +15,7 @@ delete env.COMPOSE_PROJECT_NAME;
 try {
   const remote = path.join(temporary, 'checkout with spaces', 'remote');
   const deploy = path.join(remote, 'deploy');
-  const stacks = path.join(remote, 'dockge', '.state', 'stacks');
+  const stacks = path.join(remote, 'symlink-fixture', 'stacks');
   mkdirSync(deploy, { recursive: true });
   mkdirSync(stacks, { recursive: true });
   for (const file of [
@@ -29,7 +29,7 @@ try {
 
   for (const [label, directory, extraEnv, production] of [
     ['CLI relative defaults', deploy, {}, false],
-    ['Dockge logical directory', logical, { YOAUTHORIZE_REMOTE_DIR: remote }, false],
+    ['symlinked directory with explicit remote root', logical, { YOAUTHORIZE_REMOTE_DIR: remote }, false],
     ['production override', deploy, {}, true],
   ]) {
     const args = ['compose', '--project-directory', directory, '-f', path.join(directory, 'compose.yaml')];

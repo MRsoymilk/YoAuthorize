@@ -22,7 +22,7 @@ run `node remote/manager/server.mjs` from the repository root and open
 http://127.0.0.1:5002. See [Host Manager](../manager/README.md) for prerequisites,
 security and operation semantics. Starting the manager does not start the stack.
 
-`compose.yaml` remains the entry point for CLI and Dockge, with the project name,
+`compose.yaml` remains the entry point for CLI and host manager, with the project name,
 all nine services, and all shared networks, volumes, and secrets. Each service
 uses `extends` with a `file` and `service` reference to a same-directory fragment:
 
@@ -33,9 +33,10 @@ uses `extends` with a `file` and `service` reference to a same-directory fragmen
 Keep these fragments beside `compose.yaml`; they are not standalone stacks and
 do not need additional `-f` arguments. Existing commands and the production
 override remain unchanged. Edit service settings in the corresponding fragment.
-Dockge's Compose editor edits the main file, not the referenced fragments; use
-a filesystem editor for fragment changes. UI edits to Compose or `.env` modify
-this checkout directly.
+
+Run `node remote/deploy/test-paths.mjs` from the repository root to verify path
+resolution in a relocated checkout with spaces, including symlinked paths and
+the production override. The test does not start containers or copy secrets.
 
 ## Build proxy on Linux
 
