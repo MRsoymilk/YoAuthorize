@@ -1,0 +1,105 @@
+services:
+  signer:
+    image: yoauthorize-signer:local
+    user: "${LOCAL_UID:-65532}:${LOCAL_GID:-65532}"
+    build:
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
+      dockerfile: Dockerfile.signer
+      network: ${DOCKER_BUILD_NETWORK:-default}
+    environment:
+      SIGNER_LISTEN_ADDR: 0.0.0.0:8090
+      SIGNING_KEY_ID: ${SIGNING_KEY_ID:-development-1}
+      SIGNING_KEY_FILE: /run/secrets/license_signing_key
+      SIGNER_SHARED_SECRET_FILE: /run/secrets/signer_shared_secret
+    secrets:
+      - license_signing_key
+      - signer_shared_secret
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/license-signer", "--healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [signing]
+    restart: unless-stopped
+
+  migrate:
+    image: yoauthorize-api:local
+    build:
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
+      dockerfile: Dockerfile.api
+      network: ${DOCKER_BUILD_NETWORK:-default}
+    entrypoint: ["migrate"]
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+    secrets:
+      - database_url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [data]
+    restart: "no"
+
+  api:
+    image: yoauthorize-api:local
+    build:
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
+      dockerfile: Dockerfile.api
+      network: ${DOCKER_BUILD_NETWORK:-default}
+    environment:
+      LISTEN_ADDR: 0.0.0.0:8080
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL: redis://redis:6379/
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8088}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ACTIVATION_PEPPER_FILE: /run/secrets/activation_pepper
+      SIGNER_URL: http://signer:8090
+      SIGNER_SHARED_SECRET_FILE: /run/secrets/signer_shared_secret
+      SMTP_URL: ${SMTP_URL:-smtp://yoauthorize-mailpit:1025}
+      MAIL_FROM: ${MAIL_FROM:-YoAuthorize <no-reply@localhost>}
+      NO_PROXY: localhost,127.0.0.1,postgres,redis,signer,yoauthorize-mailpit
+      no_proxy: localhost,127.0.0.1,postgres,redis,signer,yoauthorize-mailpit
+    secrets:
+      - database_url
+      - activation_pepper
+      - signer_shared_secret
+    read_only: true
+    tmpfs: [/tmp]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      signer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/authorization-api", "--healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      dev-net:
+        aliases: [yoauthorize-api]
+      data:
+      signing:
+    restart: unless-stopped
+
+  bootstrap-admin:
+    image: yoauthorize-api:local
+    profiles: [tools]
+    build:
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/backend
+      dockerfile: Dockerfile.api
+      network: ${DOCKER_BUILD_NETWORK:-default}
+    entrypoint: ["bootstrap-admin"]
+    user: "${LOCAL_UID:-65532}:${LOCAL_GID:-65532}"
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Administrator}
+      BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/bootstrap_admin_password
+    secrets:
+      - database_url
+      - bootstrap_admin_password
+    networks: [data]

@@ -15,6 +15,23 @@ Create the initial administrator by setting `BOOTSTRAP_ADMIN_EMAIL` and running 
 docker compose --profile tools run --rm bootstrap-admin
 ```
 
+## Compose layout
+
+`compose.yaml` remains the entry point for CLI and Dockge, with the project name,
+all nine services, and all shared networks, volumes, and secrets. Each service
+uses `extends` with a `file` and `service` reference to a same-directory fragment:
+
+- `compose.backend.yaml`: API, signer, migration, and bootstrap-admin tool.
+- `compose.infrastructure.yaml`: PostgreSQL, Redis, and Mailpit.
+- `compose.web.yaml`: web frontend and Caddy.
+
+Keep these fragments beside `compose.yaml`; they are not standalone stacks and
+do not need additional `-f` arguments. Existing commands and the production
+override remain unchanged. Edit service settings in the corresponding fragment.
+Dockge's Compose editor edits the main file, not the referenced fragments; use
+a filesystem editor for fragment changes. UI edits to Compose or `.env` modify
+this checkout directly.
+
 ## Build proxy on Linux
 
 Docker automatically supplies build proxy arguments from `~/.docker/config.json`.

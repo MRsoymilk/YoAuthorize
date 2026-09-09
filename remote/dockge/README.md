@@ -25,7 +25,18 @@ The Dockge startup script initializes the external network but never generates
 or overwrites business secrets. Stack controls use the development Compose
 configuration; production's explicit two-file invocation remains CLI-managed.
 
+`remote/deploy/compose.yaml` remains the stack entry point, declaring all nine
+services through `extends` (`file`/`service`) references to same-directory files:
+`compose.backend.yaml` (api, signer, migrate, bootstrap-admin),
+`compose.infrastructure.yaml` (postgres, redis, mailpit), and `compose.web.yaml`
+(web, caddy). The main file retains the project name and all shared networks,
+volumes, and secrets. Keep the fragments beside it; no extra stack registration
+or `-f` arguments are needed for this split.
+
 Editing Compose or environment settings in Dockge edits this checkout directly.
+The UI's Compose editor edits the main file, not the referenced fragments. Edit
+service definitions in their fragment using a filesystem editor; the UI does
+not provide an editor for those files.
 Do not delete this stack from the UI as a way to stop it; use Stop/Down instead.
 The successful one-shot `migrate` container may make the stack appear exited
 even while its long-running services are healthy. Check individual services.

@@ -18,7 +18,10 @@ try {
   const stacks = path.join(remote, 'dockge', '.state', 'stacks');
   mkdirSync(deploy, { recursive: true });
   mkdirSync(stacks, { recursive: true });
-  for (const file of ['compose.yaml', 'compose.production.yaml']) {
+  for (const file of [
+    'compose.yaml', 'compose.backend.yaml', 'compose.infrastructure.yaml',
+    'compose.web.yaml', 'compose.production.yaml',
+  ]) {
     copyFileSync(path.join(source, file), path.join(deploy, file));
   }
   const logical = path.join(stacks, 'yoauthorize');

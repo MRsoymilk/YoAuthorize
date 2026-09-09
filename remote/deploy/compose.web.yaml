@@ -1,0 +1,45 @@
+services:
+  web:
+    image: yoauthorize-web:local
+    build:
+      context: ${YOAUTHORIZE_REMOTE_DIR:-..}/frontend
+      dockerfile: Dockerfile
+      network: ${DOCKER_BUILD_NETWORK:-default}
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run]
+    healthcheck:
+      test: ["CMD", "wget", "-Y", "off", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      dev-net:
+        aliases: [yoauthorize-web]
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10-alpine
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8088}
+      NO_PROXY: localhost,127.0.0.1,yoauthorize-api,yoauthorize-web
+      no_proxy: localhost,127.0.0.1,yoauthorize-api,yoauthorize-web
+    ports:
+      - "127.0.0.1:${YOAUTHORIZE_HTTP_PORT:-8088}:8088"
+    volumes:
+      - ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-Y", "off", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      dev-net:
+        aliases: [yoauthorize-caddy]
+    restart: unless-stopped
