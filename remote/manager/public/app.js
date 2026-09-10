@@ -64,9 +64,15 @@ function showJob(job) {
 }
 document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', async () => {
   const { action, target } = button.dataset;
-  if (action === 'stop' || action === 'restart' || target === 'migrate') {
-    const database = ['postgres', 'backend', 'all'].includes(target);
-    if (!confirm(`${action === 'start' ? 'Run migration for' : action} ${target}?\n${database ? 'WARNING: PostgreSQL will be interrupted; dependent services may fail.\n' : ''}${target === 'migrate' ? 'This applies database schema changes and starts PostgreSQL if needed.' : 'This can interrupt requests. Containers and volumes will not be deleted.'}`)) return;
+  if (action === 'stop' || action === 'restart' || target === 'migrate' || target === 'frontend') {
+    const database = action !== 'start' && ['postgres', 'backend', 'infrastructure', 'all'].includes(target);
+    const groups = { backend: 'postgres, redis, mailpit, signer, api', frontend: 'web, caddy',
+      infrastructure: 'postgres, redis, mailpit', all: 'postgres, redis, mailpit, signer, api, web, caddy' };
+    const selected = groups[target] ? ` (${groups[target]}${action === 'stop' && ['backend', 'all'].includes(target) ? ', migrate' : ''})` : '';
+    const detail = target === 'migrate' ? 'This applies database schema changes and starts PostgreSQL if needed.' :
+      target === 'frontend' && action === 'start' ? 'WARNING: Starting web + caddy also starts backend dependencies via Caddy: api, postgres, redis, signer and migrate. This may apply database schema changes.' :
+      `${target === 'frontend' ? 'Only web and caddy are affected; backend services will not be stopped or restarted. ' : ''}This can interrupt requests. Containers and volumes will not be deleted.`;
+    if (!confirm(`${action === 'start' && target === 'migrate' ? 'Run migration for' : action} ${target}${selected}?\n${database ? 'WARNING: PostgreSQL will be interrupted; dependent services may fail.\n' : ''}${detail}`)) return;
   }
   submitting = true; controls(); error();
   try { showJob((await api('/api/actions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token }, body: JSON.stringify({ action, target }) })).job); }

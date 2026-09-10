@@ -31,6 +31,13 @@ test('whitelist, dependency-preserving starts and explicit non-destructive group
   assert.deepEqual(actionArgs('start', 'all'), ['up', '-d', ...SERVICES]);
   assert.deepEqual(actionArgs('stop', 'all'), ['stop', ...SERVICES, 'migrate']);
   assert.deepEqual(actionArgs('stop', 'backend'), ['stop', 'postgres', 'redis', 'mailpit', 'signer', 'api', 'migrate']);
+  assert.deepEqual(actionArgs('restart', 'backend'), ['restart', '--no-deps', 'postgres', 'redis', 'mailpit', 'signer', 'api']);
+  assert.deepEqual(actionArgs('restart', 'all'), ['restart', '--no-deps', ...SERVICES]);
+  for (const [group, names] of [['frontend', ['web', 'caddy']], ['infrastructure', ['postgres', 'redis', 'mailpit']]]) {
+    assert.deepEqual(actionArgs('start', group), ['up', '-d', ...names]);
+    assert.deepEqual(actionArgs('stop', group), ['stop', ...names]);
+    assert.deepEqual(actionArgs('restart', group), ['restart', '--no-deps', ...names]);
+  }
   assert.deepEqual(actionArgs('start', 'migrate'), ['up', '-d', 'migrate']);
   assert.ok(!actionArgs('restart', 'all').includes('migrate'));
   for (const name of ['bootstrap-admin', '--help', 'api; touch /tmp/pwn', '../api', 'toString', {}, null]) {
@@ -103,7 +110,7 @@ test('preflight requires only target/dependency secrets and Caddyfile only when 
   const targets = {
     redis: [], mailpit: [], web: [], postgres: ['postgres-password'],
     migrate: ['postgres-password', 'database-url'], signer: ['license-signing-key', 'signer-shared-secret'],
-    api: business, backend: business, all: business, caddy: business,
+    api: business, backend: business, frontend: business, infrastructure: ['postgres-password'], all: business, caddy: business,
   };
   for (const [target, secrets] of Object.entries(targets)) await t.test(target, async t => {
     const dir = await mkdtemp(path.join(tmpdir(), 'yoauthorize-preflight-'));
@@ -111,7 +118,7 @@ test('preflight requires only target/dependency secrets and Caddyfile only when 
     const common = ['.env', 'compose.yaml', 'compose.backend.yaml', 'compose.infrastructure.yaml', 'compose.web.yaml'];
     for (const file of common) await writeFile(path.join(dir, file), file === '.env' ? '' : 'fixture');
     const required = secrets.map(name => `secrets/${name}`);
-    if (target === 'caddy' || target === 'all') required.push('Caddyfile');
+    if (['caddy', 'frontend', 'all'].includes(target)) required.push('Caddyfile');
     if (secrets.length) await mkdir(path.join(dir, 'secrets'));
     for (const file of required) await writeFile(path.join(dir, file), 'fixture');
     // No unrelated secrets or Caddyfile exist; secret-free targets have no secrets directory.

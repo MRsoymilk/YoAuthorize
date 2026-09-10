@@ -17,6 +17,10 @@ h2 span { margin-left: 12px; color: var(--muted); }
 p, footer { color: var(--muted); font-size: 13px; line-height: 1.6; }
 .toolbar { padding: 14px; border: 1px solid var(--line); background: #1b1c19; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .toolbar p { margin: 4px 0 0; }
+.group { width: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.group > div:first-child { flex: 1 1 180px; }
+.group h3 { font-size: 13px; margin: 0 0 4px; }
+.group small { display: block; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 button, select { font: inherit; font-size: 12px; min-height: 34px; padding: 6px 10px; border: 1px solid #505448; background: #20221c; color: #e9e9e3; border-radius: 0; }
 button { cursor: pointer; }

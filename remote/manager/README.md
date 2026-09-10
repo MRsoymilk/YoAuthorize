@@ -40,11 +40,11 @@ not validated or overwritten. The tools-only bootstrap password is never require
 | Start target | Required files beyond `.env` and Compose files |
 | --- | --- |
 | redis, mailpit, web | None; no secrets directory or Caddyfile needed |
-| postgres | `secrets/postgres-password` |
+| postgres, infrastructure | `secrets/postgres-password` |
 | migrate | `secrets/postgres-password`, `secrets/database-url` |
 | signer | `secrets/license-signing-key`, `secrets/signer-shared-secret` |
 | api, backend | All five business secrets: postgres-password, database-url, activation-pepper, signer-shared-secret, license-signing-key |
-| caddy, all | All five business secrets plus `Caddyfile` |
+| caddy, frontend, all | All five business secrets plus `Caddyfile` |
 
 ## Controls
 
@@ -52,11 +52,17 @@ not validated or overwritten. The tools-only bootstrap password is never require
 | --- | --- | --- |
 | Individual persistent service | `up -d SERVICE`, including dependencies | `stop SERVICE` / `restart --no-deps SERVICE` |
 | Backend | `up -d api mailpit` (Compose supplies postgres, migrate, redis, signer) | Explicit backend service names; restart excludes migrate |
+| Frontend | `up -d web caddy` (Caddy also starts backend dependencies: api, postgres, migrate, redis, signer) | `stop web caddy` / `restart --no-deps web caddy`; does not stop/restart backend |
+| Infrastructure | `up -d postgres redis mailpit` (only these three) | `stop postgres redis mailpit` / `restart --no-deps postgres redis mailpit`; no other services targeted |
 | All | `up -d postgres redis mailpit signer api web caddy` | Explicit seven services plus migrate for stop; restart excludes migrate |
 | Migration | Manual `up -d migrate`, including postgres; confirm schema changes | No individual stop/restart |
 
-The page exposes group starts/stops and individual starts/stops/restarts/logs.
-The API also permits group restarts. A start may build missing local images;
+The page exposes Start, Stop and Restart for all four groups (12 buttons), plus
+individual starts/stops/restarts/logs. Frontend Start requires confirmation because
+it also starts backend dependencies and may apply migrations; Frontend Stop/Restart
+affect only web and caddy, without a database-interruption warning. Backend,
+Infrastructure and All Stop/Restart warn about PostgreSQL interruption.
+A start may build missing local images;
 there is no forced rebuild/pull control. Restart does not create missing
 containers or apply configuration changes; use Start for reconciliation.
 Successful exited migration containers display **Completed**, not a stack failure.

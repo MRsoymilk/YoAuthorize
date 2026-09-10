@@ -10,6 +10,8 @@ export const DEPLOY = fileURLToPath(new URL('../deploy/', import.meta.url));
 export const SERVICES = Object.freeze(['postgres', 'redis', 'mailpit', 'signer', 'api', 'web', 'caddy']);
 export const VISIBLE = Object.freeze([...SERVICES, 'migrate']);
 const BACKEND = ['postgres', 'redis', 'mailpit', 'signer', 'api', 'migrate'];
+const FRONTEND = ['web', 'caddy'];
+const INFRASTRUCTURE = ['postgres', 'redis', 'mailpit'];
 export const OUTPUT_LIMIT = 256 * 1024;
 const BODY_LIMIT = 4096;
 const fail = (status, message) => Object.assign(new Error(message), { status });
@@ -28,13 +30,15 @@ export function composeArgs(args, deploy = DEPLOY) {
 
 export function actionArgs(action, target) {
   if (!['start', 'stop', 'restart'].includes(action) ||
-      ![...VISIBLE, 'backend', 'all'].includes(target) ||
+      ![...VISIBLE, 'backend', 'frontend', 'infrastructure', 'all'].includes(target) ||
       (target === 'migrate' && action !== 'start')) throw fail(400, 'Unsupported action or target.');
   if (action === 'start') {
-    const names = target === 'backend' ? ['api', 'mailpit'] : target === 'all' ? SERVICES : [target];
+    const names = target === 'backend' ? ['api', 'mailpit'] : target === 'frontend' ? FRONTEND :
+      target === 'infrastructure' ? INFRASTRUCTURE : target === 'all' ? SERVICES : [target];
     return ['up', '-d', ...names];
   }
-  const names = target === 'backend' ? BACKEND : target === 'all' ? [...SERVICES, 'migrate'] : [target];
+  const names = target === 'backend' ? BACKEND : target === 'frontend' ? FRONTEND :
+    target === 'infrastructure' ? INFRASTRUCTURE : target === 'all' ? [...SERVICES, 'migrate'] : [target];
   return action === 'restart' ? ['restart', '--no-deps', ...names.filter(name => name !== 'migrate')]
     : ['stop', ...names];
 }
@@ -105,11 +109,11 @@ export async function checkStartFiles(target, deploy = DEPLOY) {
   const secrets = {
     redis: [], mailpit: [], web: [], postgres: ['postgres-password'],
     migrate: ['postgres-password', 'database-url'], signer: ['license-signing-key', 'signer-shared-secret'],
-    api: business, backend: business, all: business, caddy: business,
+    api: business, backend: business, frontend: business, infrastructure: ['postgres-password'], all: business, caddy: business,
   };
   const files = ['.env', 'compose.yaml', 'compose.backend.yaml', 'compose.infrastructure.yaml', 'compose.web.yaml',
     ...secrets[target].map(name => `secrets/${name}`)];
-  if (target === 'caddy' || target === 'all') files.push('Caddyfile');
+  if (['caddy', 'frontend', 'all'].includes(target)) files.push('Caddyfile');
   const missing = [];
   for (const file of files) {
     try {

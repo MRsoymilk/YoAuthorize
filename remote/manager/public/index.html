@@ -16,8 +16,23 @@
     <div class="workspace">
     <section class="services-panel" aria-label="Service controls">
     <section class="toolbar" aria-label="Group controls">
-      <div><h2>Stack actions</h2><p>Start includes dependencies. Stop keeps containers and volumes.</p></div>
-      <div class="actions"><button data-action="start" data-target="backend" class="primary">Start backend</button><button data-action="start" data-target="all" class="primary">Start all</button><button data-action="stop" data-target="backend" class="danger">Stop backend</button><button data-action="stop" data-target="all" class="danger">Stop all</button></div>
+      <div><h2>Stack actions</h2><p>Start includes dependencies. Stop keeps containers and volumes. Restart only affects listed services, excluding migrate.</p></div>
+      <div class="group" role="group" aria-labelledby="group-backend">
+        <div><h3 id="group-backend">Backend</h3><small>postgres, redis, mailpit, signer, api, migrate</small></div>
+        <div class="actions"><button data-action="start" data-target="backend" class="primary">Start</button><button data-action="stop" data-target="backend" class="danger">Stop</button><button data-action="restart" data-target="backend">Restart</button></div>
+      </div>
+      <div class="group" role="group" aria-labelledby="group-frontend" aria-describedby="frontend-help">
+        <div><h3 id="group-frontend">Frontend</h3><small id="frontend-help">web + caddy. Start also starts backend dependencies via Caddy (api, postgres, redis, signer, migrate). Stop/restart only web + caddy, not backend.</small></div>
+        <div class="actions"><button data-action="start" data-target="frontend" class="primary" aria-describedby="frontend-help">Start</button><button data-action="stop" data-target="frontend" class="danger">Stop</button><button data-action="restart" data-target="frontend">Restart</button></div>
+      </div>
+      <div class="group" role="group" aria-labelledby="group-infrastructure">
+        <div><h3 id="group-infrastructure">Infrastructure</h3><small>Only postgres, redis, mailpit</small></div>
+        <div class="actions"><button data-action="start" data-target="infrastructure" class="primary">Start</button><button data-action="stop" data-target="infrastructure" class="danger">Stop</button><button data-action="restart" data-target="infrastructure">Restart</button></div>
+      </div>
+      <div class="group" role="group" aria-labelledby="group-all">
+        <div><h3 id="group-all">All</h3><small>All seven services; stop also includes migrate</small></div>
+        <div class="actions"><button data-action="start" data-target="all" class="primary">Start</button><button data-action="stop" data-target="all" class="danger">Stop</button><button data-action="restart" data-target="all">Restart</button></div>
+      </div>
     </section>
     <div class="section-head"><h2>Services <span>07 + migration</span></h2><button id="refresh">Refresh status</button></div>
     <p id="status-note" role="status">Connecting to Docker Compose...</p>

@@ -7,8 +7,8 @@ const html = await readFile(new URL('./public/index.html', import.meta.url), 'ut
 const script = await readFile(new URL('./public/app.js', import.meta.url), 'utf8');
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-async function page() {
-  const elements = [], timers = new Map(), calls = [];
+async function page({ confirmed = true } = {}) {
+  const elements = [], timers = new Map(), calls = [], confirmations = [], actions = [];
   let nextTimer = 0, active = 0, maxActive = 0;
   function element() {
     const node = { value: '', checked: false, disabled: false, textContent: '', dataset: {}, children: [], events: {},
@@ -19,6 +19,9 @@ async function page() {
     elements.push(node); return node;
   }
   const ids = new Map([...html.matchAll(/id="([^"]+)"/g)].map(([, id]) => [id, element()]));
+  const groupButtons = [...html.matchAll(/<button data-action="([^"]+)" data-target="([^"]+)"[^>]*>([^<]+)<\/button>/g)].map(([, action, target, label]) => {
+    const button = element(); button.dataset = { action, target }; button.textContent = label; return button;
+  });
   const get = id => { assert.ok(ids.has(id), `known HTML id ${id}`); return ids.get(id); };
   get('log-tail').value = '200';
   runInNewContext(script, {
@@ -27,7 +30,12 @@ async function page() {
     AbortSignal: { timeout: () => undefined },
     setTimeout(callback, delay) { const id = ++nextTimer; timers.set(id, { callback, delay }); return id; },
     clearTimeout: id => timers.delete(id), setInterval: () => {},
-    fetch(url) {
+    confirm(message) { confirmations.push(message); return confirmed; },
+    fetch(url, options) {
+      if (url === '/api/actions') {
+        actions.push({ ...JSON.parse(options.body), headers: { ...options.headers } });
+        return Promise.resolve({ ok: true, json: async () => ({ job: null }) });
+      }
       if (!url.startsWith('/api/logs?')) {
         const data = { '/api/session': { token: 'fixture' }, '/api/status': { services: [] }, '/api/job': { job: null } }[url];
         assert.ok(data, `unexpected non-log fetch ${url}`);
@@ -44,12 +52,56 @@ async function page() {
   });
   await settle();
   const logTimers = () => [...timers.entries()].filter(([, timer]) => timer.delay === 3000);
-  return { get, calls, logTimers, maxActive: () => maxActive,
+  return { get, calls, groupButtons, confirmations, actions, logTimers, maxActive: () => maxActive,
     async tickLogs() {
       const [[id, timer]] = logTimers(); timers.delete(id); void timer.callback(); await settle();
     },
   };
 }
+
+test('all twelve group controls submit selected actions with accurate confirmations', async () => {
+  const p = await page();
+  assert.equal(p.groupButtons.length, 12);
+  assert.match(html, /Start also starts backend dependencies via Caddy/);
+  for (const target of ['backend', 'frontend', 'infrastructure', 'all']) {
+    assert.match(html, new RegExp(`id="group-${target}">`));
+    for (const action of ['start', 'stop', 'restart']) {
+      const buttons = p.groupButtons.filter(button => button.dataset.target === target && button.dataset.action === action);
+      assert.equal(buttons.length, 1);
+      assert.equal(buttons[0].textContent, action[0].toUpperCase() + action.slice(1));
+      assert.equal(buttons[0].disabled, false);
+      const before = p.confirmations.length;
+      await buttons[0].emit('click');
+      assert.deepEqual(p.actions.at(-1), { action, target, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'fixture' } });
+      if (action === 'start' && target !== 'frontend') {
+        assert.equal(p.confirmations.length, before); continue;
+      }
+      assert.equal(p.confirmations.length, before + 1);
+      const message = p.confirmations.at(-1);
+      assert.ok(message.startsWith(`${action} ${target} (`));
+      if (target === 'frontend') {
+        assert.doesNotMatch(message, /PostgreSQL will be interrupted/);
+        if (action === 'start') assert.match(message, /WARNING:.*backend dependencies.*api, postgres, redis, signer and migrate/);
+        else assert.match(message, /Only web and caddy are affected; backend services will not be stopped or restarted/);
+      } else {
+        assert.match(message, /WARNING: PostgreSQL will be interrupted/);
+        if (target === 'infrastructure') assert.match(message, /\(postgres, redis, mailpit\)/);
+        if (action === 'restart') assert.doesNotMatch(message, /migrate/);
+        else if (target !== 'infrastructure') assert.match(message, /, migrate\)/);
+      }
+    }
+  }
+  assert.equal(p.actions.length, 12);
+});
+
+test('declining group confirmations sends no mutations', async () => {
+  const p = await page({ confirmed: false });
+  for (const button of p.groupButtons.filter(button => button.dataset.action !== 'start' || button.dataset.target === 'frontend')) {
+    await button.emit('click');
+  }
+  assert.equal(p.confirmations.length, 9);
+  assert.equal(p.actions.length, 0);
+});
 
 test('live logs default off; manual and live snapshots serialize, stay bounded and stop polling', async () => {
   assert.doesNotMatch(html.match(/<input\b[^>]*id="logs-live"[^>]*>/)[0], /\bchecked\b/);
