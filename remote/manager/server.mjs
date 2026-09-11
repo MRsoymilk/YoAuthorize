@@ -44,13 +44,14 @@ export function actionArgs(action, target) {
 }
 
 // Keep only the last bytes, while draining both pipes so noisy children cannot block.
-export function execute(args, { timeout = 20_000, onOutput = () => {}, spawnChild = spawn } = {}) {
+export function execute(args, { timeout = 20_000, color = false, onOutput = () => {}, spawnChild = spawn } = {}) {
   return new Promise(resolve => {
     let stdout = Buffer.alloc(0), stderr = Buffer.alloc(0), truncated = false, timedOut = false;
-    const child = spawnChild('docker', args, {
+    const commandArgs = args[0] === 'compose' ? ['compose', '--ansi', color ? 'always' : 'never', ...args.slice(1)] : args;
+    const child = spawnChild('docker', commandArgs, {
       cwd: DEPLOY, shell: false, stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env, YOAUTHORIZE_REMOTE_DIR: path.resolve(DEPLOY, '..'),
-        COMPOSE_PROFILES: '', COMPOSE_ANSI: 'never', COMPOSE_PROGRESS: 'plain' },
+        COMPOSE_PROFILES: '', COMPOSE_ANSI: color ? 'always' : 'never', COMPOSE_PROGRESS: color ? 'auto' : 'plain' },
     });
     const append = (previous, chunk) => {
       const data = Buffer.concat([previous, chunk]);
@@ -131,10 +132,10 @@ export async function checkStartFiles(target, deploy = DEPLOY) {
 export function createManager({ run = execute, preflight = checkStartFiles } = {}) {
   let job = null, active = false, readers = 0;
   const docker = async (args, options) => checked(await run(args, options));
-  async function read(args) {
+  async function read(args, options) {
     if (readers >= 4) throw fail(429, 'Too many Docker reads; retry shortly.');
     readers++;
-    try { return await docker(composeArgs(args)); } finally { readers--; }
+    try { return await docker(composeArgs(args), options); } finally { readers--; }
   }
   return {
     get job() { return job; },
@@ -147,7 +148,7 @@ export function createManager({ run = execute, preflight = checkStartFiles } = {
       if (!VISIBLE.includes(service) || !/^\d{1,4}$/.test(tail) || Number(tail) < 1 || Number(tail) > 1000) {
         throw fail(400, 'Choose an allowed service and a tail from 1 to 1000.');
       }
-      const result = await read(['logs', '--no-color', '--timestamps', '--tail', String(Number(tail)), service]);
+      const result = await read(['logs', '--timestamps', '--tail', String(Number(tail)), service], { color: true });
       const output = Buffer.from(result.stdout + result.stderr);
       return { output: output.subarray(Math.max(0, output.length - OUTPUT_LIMIT)).toString(),
         truncated: result.truncated || output.length > OUTPUT_LIMIT };
@@ -164,12 +165,14 @@ export function createManager({ run = execute, preflight = checkStartFiles } = {
         active = false; throw error;
       }
       job.state = 'running';
+      let captured = Buffer.alloc(0);
       const append = chunk => {
-        const output = Buffer.concat([Buffer.from(job.output), Buffer.from(chunk)]);
+        const output = Buffer.concat([captured, Buffer.from(chunk)]);
         if (output.length > OUTPUT_LIMIT) job.truncated = true;
-        job.output = output.subarray(Math.max(0, output.length - OUTPUT_LIMIT)).toString();
+        captured = output.subarray(Math.max(0, output.length - OUTPUT_LIMIT));
+        job.output = captured.toString();
       };
-      const options = { timeout: 30 * 60_000, onOutput: append };
+      const options = { timeout: 30 * 60_000, color: true, onOutput: append };
       // Reserve the slot before any await; one accepted mutation includes its network preparation.
       void (async () => {
         try {
@@ -236,6 +239,7 @@ async function bodyJSON(req) {
 const STATIC = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
+  ['/ansi.js', ['ansi.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/logo.png', ['logo.png', 'image/png']],
 ]);

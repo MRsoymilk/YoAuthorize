@@ -59,8 +59,8 @@ function showJob(job) {
   if (!job) return;
   $('job-state').textContent = job.state.replace('_', ' ').toUpperCase();
   $('job-meta').textContent = `${job.action} ${job.target} / ${new Date(job.startedAt).toLocaleString()}${job.finishedAt ? ' / finished' : ' / in progress'}${job.truncated ? ' / older output discarded' : ''}`;
-  $('job-output').textContent = (job.output || (busy ? 'Waiting for Docker...' : 'No command output.')) + (job.error ? `\nERROR: ${job.error}` : '') +
-    (job.state === 'succeeded' ? '\nCommand completed. Check service status for readiness.' : '');
+  renderAnsi($('job-output'), job.output || (busy ? 'Waiting for Docker...' : 'No command output.'), job.truncated,
+    (job.error ? `\nERROR: ${job.error}` : '') + (job.state === 'succeeded' ? '\nCommand completed. Check service status for readiness.' : ''));
 }
 document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', async () => {
   const { action, target } = button.dataset;
@@ -88,11 +88,11 @@ async function loadLogs() {
   try {
     const result = await api(`/api/logs?service=${service}&tail=${tail}`);
     if (revision !== logRevision) return;
-    $('log-output').textContent = result.output || 'No logs returned (the container may not exist yet).';
+    renderAnsi($('log-output'), result.output || 'No logs returned (the container may not exist yet).', result.truncated);
     $('log-note').textContent = `${service} / snapshot at ${new Date().toLocaleTimeString()}${result.truncated ? ' / output truncated' : ''}`;
   } catch (e) {
     if (revision !== logRevision) return;
-    $('log-note').textContent = `Logs unavailable: ${e.message}`; $('log-output').textContent = 'No current snapshot.';
+    $('log-note').textContent = `Logs unavailable: ${e.message}`; renderAnsi($('log-output'), 'No current snapshot.');
   } finally {
     logsLoading = false; $('logs-refresh').disabled = false;
     // Coalesce selection changes without overlapping requests or displaying stale results.
@@ -102,7 +102,7 @@ async function loadLogs() {
 }
 function selectLogs() {
   logRevision++;
-  $('log-output').textContent = 'No current snapshot.';
+  renderAnsi($('log-output'), 'No current snapshot.');
   $('log-note').textContent = `Waiting for ${$('log-service').value} logs...`;
   void loadLogs();
 }

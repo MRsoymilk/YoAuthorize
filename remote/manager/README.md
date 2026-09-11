@@ -104,6 +104,34 @@ Production overrides and `bootstrap-admin` remain CLI-managed.
   the manager with Ctrl-C does not stop services. Avoid exiting during a job;
   its in-memory record is lost and daemon work may continue.
 
+## Output Colors
+
+Service logs and Compose start/stop/restart output request color with the global
+`docker compose --ansi always` option and `COMPOSE_ANSI=always`. Logs no longer
+use `--no-color`. Status JSON, startup version checks and network commands use
+`COMPOSE_ANSI=never` (and `--ansi never` for Compose). Colored commands use
+automatic progress mode because Compose rejects forced ANSI with `plain` progress;
+all output is still captured through pipes, not an interactive terminal.
+No business-container environment, TTY, logging,
+or Compose configuration is changed. Applications must emit their own ANSI;
+plain text and plain JSON logs remain plain, without JSON syntax highlighting.
+
+Both panes safely render SGR base/bright foreground and background, 256-color
+and semicolon-form RGB truecolor, bold, dim, italic, underline and their resets.
+Output becomes DOM spans via `textContent`, never HTML or clickable OSC links.
+Only fixed style properties and validated numeric colors are assigned through
+the CSSOM; the existing `style-src 'self'` CSP is not relaxed.
+
+These are bounded snapshots, not a terminal emulator: CR/CRLF become newlines,
+cursor/clear commands and OSC/control strings are ignored. Trailing incomplete
+escapes are hidden until a later snapshot completes them. A cap may discard a
+style reset or the start of an escape; each snapshot starts with default styles,
+and recognizable leading SGR fragments are removed best-effort when truncated.
+Arbitrary mid-OSC fragments cannot be reliably identified and may appear as
+literal text. Unsupported SGR modes are ignored. Unchanged snapshots retain
+their DOM; replacements preserve scroll offsets or follow the bottom if already
+there. All existing capture, tail, polling and concurrency limits still apply.
+
 ## Security
 
 This is a trusted-local-administrator tool, not a multi-user authentication
@@ -133,4 +161,6 @@ containers. Frontend tests run the page script with fake DOM, fetch and timers.
 Coverage includes commands/groups, paths with spaces, target-aware preflight,
 network behavior, status formats, bounded output/timeouts, origin/CSRF, body
 limits, explicit assets, concurrent mutations, progress polling, and serialized
-live/manual log fetches with service/tail switching and stale-response rejection.
+live/manual log fetches with service/tail switching and stale-response rejection,
+ANSI command opt-in, split output capture, safe color/reset rendering, ignored
+OSC/control sequences, truncated snapshots and scroll preservation.

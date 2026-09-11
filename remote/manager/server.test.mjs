@@ -196,7 +196,7 @@ test('logs/status errors are honest; tail and output are bounded; reads have a c
   const calls = [];
   const manager = createManager({ run: async args => { calls.push(args); return ok('hello'); } });
   assert.equal((await manager.logs('api', '200')).output, 'hello');
-  assert.deepEqual(calls[0], composeArgs(['logs', '--no-color', '--timestamps', '--tail', '200', 'api']));
+  assert.deepEqual(calls[0], composeArgs(['logs', '--timestamps', '--tail', '200', 'api']));
   for (const [service, tail] of [['bootstrap-admin', '200'], ['api', '0'], ['api', '1001'], ['api', '-1'], ['api', '2;id']]) {
     await assert.rejects(manager.logs(service, tail), { status: 400 });
   }
@@ -236,6 +236,53 @@ test('child execution uses no shell, drains bounded output, reports spawn errors
   assert.equal(timed.timedOut, true); assert.equal(timed.signal, 'SIGTERM');
 });
 
+test('only logs and Compose mutations opt into ANSI; status and network reads stay plain', async () => {
+  const calls = [];
+  const manager = createManager({ preflight: async () => {}, run: async (args, options = {}) => {
+    calls.push({ args, options });
+    if (args.includes('logs')) return ok('\x1b[31mservice\x1b[0m');
+    if (args.includes('up') || args.includes('stop') || args.includes('restart')) {
+      const bytes = Buffer.from('\x1b[38;2;1;2;3mcolored \u20ac\x1b[0m');
+      options.onOutput(Buffer.alloc(OUTPUT_LIMIT, 'x'));
+      for (const byte of bytes) options.onOutput(Buffer.from([byte]));
+    }
+    return ok(args.includes('ps') ? '[]' : '');
+  } });
+  await manager.status();
+  assert.equal((await manager.logs('api', '1')).output, '\x1b[31mservice\x1b[0m');
+  for (const action of ['start', 'stop', 'restart']) {
+    await manager.submit(action, 'api'); await finished(manager);
+    assert.ok(manager.job.output.endsWith('\x1b[38;2;1;2;3mcolored \u20ac\x1b[0m'));
+    assert.equal(Buffer.byteLength(manager.job.output), OUTPUT_LIMIT);
+    assert.equal(manager.job.truncated, true);
+  }
+  for (const { args, options } of calls) {
+    assert.equal(options.color === true, ['logs', 'up', 'stop', 'restart'].some(command => args.includes(command)));
+    assert.ok(!args.includes('--no-color'));
+  }
+});
+
+test('execute puts ANSI flags before Compose subcommands and sets per-command environment', async () => {
+  for (const [args, color] of [[composeArgs(['logs', 'api']), true], [composeArgs(['up', '-d', 'api']), true],
+    [composeArgs(['ps', '--format', 'json']), false], [['compose', 'version'], false], [['network', 'ls'], false]]) {
+    const chunks = [];
+    const result = await execute(args, { color, onOutput: chunk => chunks.push(chunk), spawnChild(command, actual, options) {
+      assert.deepEqual(actual, args[0] === 'compose' ? ['compose', '--ansi', color ? 'always' : 'never', ...args.slice(1)] : args);
+      assert.equal(options.env.COMPOSE_ANSI, color ? 'always' : 'never');
+      assert.equal(options.env.COMPOSE_PROGRESS, color ? 'auto' : 'plain');
+      const child = new EventEmitter(); child.stdout = new PassThrough(); child.stderr = new PassThrough();
+      setImmediate(() => {
+        child.stdout.write('\x1b[3'); child.stdout.write('1mred\x1b[0m');
+        child.stderr.write('\x1b[32mgreen\x1b[0m'); child.emit('close', 0, null);
+      });
+      return child;
+    } });
+    assert.equal(result.stdout, '\x1b[31mred\x1b[0m');
+    assert.equal(result.stderr, '\x1b[32mgreen\x1b[0m');
+    assert.equal(Buffer.concat(chunks).toString(), result.stdout + result.stderr);
+  }
+});
+
 test('HTTP smoke: explicit assets, security, body limits, logs and concurrent action polling', async t => {
   const gate = deferred();
   const manager = createManager({ run: args => args.includes('stop') ? gate.promise : Promise.resolve(ok('[]')) });
@@ -250,7 +297,7 @@ test('HTTP smoke: explicit assets, security, body limits, logs and concurrent ac
     });
     req.on('error', reject); req.end(body);
   });
-  for (const asset of ['/', '/app.js', '/styles.css']) assert.equal((await request(asset)).status, 200);
+  for (const asset of ['/', '/app.js', '/ansi.js', '/styles.css']) assert.equal((await request(asset)).status, 200);
   const logo = await fetch(`http://127.0.0.1:${port}/logo.png`);
   assert.equal(logo.status, 200);
   assert.equal(logo.headers.get('content-type'), 'image/png');

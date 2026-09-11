@@ -5,14 +5,20 @@ import { runInNewContext } from 'node:vm';
 
 const html = await readFile(new URL('./public/index.html', import.meta.url), 'utf8');
 const script = await readFile(new URL('./public/app.js', import.meta.url), 'utf8');
+const ansi = await readFile(new URL('./public/ansi.js', import.meta.url), 'utf8');
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-async function page({ confirmed = true } = {}) {
+async function page({ confirmed = true, job = null } = {}) {
   const elements = [], timers = new Map(), calls = [], confirmations = [], actions = [];
   let nextTimer = 0, active = 0, maxActive = 0;
   function element() {
-    const node = { value: '', checked: false, disabled: false, textContent: '', dataset: {}, children: [], events: {},
-      append(...children) { this.children.push(...children); },
+    let text = '';
+    const node = { value: '', checked: false, disabled: false, dataset: {}, children: [], events: {}, style: {},
+      scrollTop: 0, scrollLeft: 0, scrollHeight: 100, clientHeight: 100,
+      get textContent() { return text + this.children.map(child => child.textContent).join(''); },
+      set textContent(value) { text = value; this.children = []; },
+      append(...children) { this.children.push(...children.flatMap(child => child.fragment ? child.children : [child])); },
+      replaceChildren(...children) { this.textContent = ''; this.append(...children); },
       addEventListener(type, callback) { this.events[type] = callback; },
       emit(type) { return this.events[type](); },
     };
@@ -24,8 +30,9 @@ async function page({ confirmed = true } = {}) {
   });
   const get = id => { assert.ok(ids.has(id), `known HTML id ${id}`); return ids.get(id); };
   get('log-tail').value = '200';
-  runInNewContext(script, {
+  runInNewContext(ansi + '\n' + script, {
     document: { getElementById: get, createElement: element,
+      createDocumentFragment() { return Object.assign(element(), { fragment: true }); },
       querySelectorAll: () => elements.filter(node => node.dataset.action) },
     AbortSignal: { timeout: () => undefined },
     setTimeout(callback, delay) { const id = ++nextTimer; timers.set(id, { callback, delay }); return id; },
@@ -37,7 +44,7 @@ async function page({ confirmed = true } = {}) {
         return Promise.resolve({ ok: true, json: async () => ({ job: null }) });
       }
       if (!url.startsWith('/api/logs?')) {
-        const data = { '/api/session': { token: 'fixture' }, '/api/status': { services: [] }, '/api/job': { job: null } }[url];
+        const data = { '/api/session': { token: 'fixture' }, '/api/status': { services: [] }, '/api/job': { job } }[url];
         assert.ok(data, `unexpected non-log fetch ${url}`);
         return Promise.resolve({ ok: true, json: async () => data });
       }
@@ -186,4 +193,20 @@ test('live polling reports current errors and recovers on the next bounded snaps
   assert.equal(p.get('log-output').textContent, 'recovered');
   assert.equal(p.logTimers().length, 1);
   assert.equal(p.maxActive(), 1);
+});
+
+test('both output panes render ANSI snapshots safely and logs skip unchanged snapshots', async () => {
+  const p = await page({ job: { state: 'succeeded', action: 'stop', target: 'api', startedAt: '2026-01-01',
+    output: '\x1b[31m<img src=x>' } });
+  assert.equal(p.get('job-output').children[0].style.color, '#aa0000');
+  assert.equal(p.get('job-output').children[0].textContent, '<img src=x>');
+  assert.deepEqual(p.get('job-output').children.at(-1).style, {});
+  for (let i = 0; i < 2; i++) {
+    void p.get('logs-refresh').emit('click');
+    p.calls[i].respond({ output: '\x1b[32mservice\x1b[0m' }); await settle();
+    if (i === 0) p.get('log-output').children[0].marker = true;
+  }
+  assert.equal(p.get('log-output').textContent, 'service');
+  assert.equal(p.get('log-output').children[0].style.color, '#00aa00');
+  assert.equal(p.get('log-output').children[0].marker, true);
 });
