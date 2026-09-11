@@ -8,7 +8,7 @@ const script = await readFile(new URL('./public/app.js', import.meta.url), 'utf8
 const ansi = await readFile(new URL('./public/ansi.js', import.meta.url), 'utf8');
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-async function page({ confirmed = true, job = null } = {}) {
+async function page({ confirmed = true, job = null, services = [], links = { publicUrl: 'https://auth.example:8088', mailboxUrl: 'http://127.0.0.1:18025' } } = {}) {
   const elements = [], timers = new Map(), calls = [], confirmations = [], actions = [];
   let nextTimer = 0, active = 0, maxActive = 0;
   function element() {
@@ -20,7 +20,10 @@ async function page({ confirmed = true, job = null } = {}) {
       append(...children) { this.children.push(...children.flatMap(child => child.fragment ? child.children : [child])); },
       replaceChildren(...children) { this.textContent = ''; this.append(...children); },
       addEventListener(type, callback) { this.events[type] = callback; },
-      emit(type) { return this.events[type](); },
+      emit(type, event) { return this.events[type](event); },
+      setAttribute(key, value) { this[key] = value; },
+      removeAttribute(key) { delete this[key]; },
+      focus() { this.focused = true; },
     };
     elements.push(node); return node;
   }
@@ -28,7 +31,10 @@ async function page({ confirmed = true, job = null } = {}) {
   const groupButtons = [...html.matchAll(/<button data-action="([^"]+)" data-target="([^"]+)"[^>]*>([^<]+)<\/button>/g)].map(([, action, target, label]) => {
     const button = element(); button.dataset = { action, target }; button.textContent = label; return button;
   });
-  const get = id => { assert.ok(ids.has(id), `known HTML id ${id}`); return ids.get(id); };
+  const get = id => {
+    const node = ids.get(id) || elements.find(node => node.id === id);
+    assert.ok(node, `known HTML id ${id}`); return node;
+  };
   get('log-tail').value = '200';
   runInNewContext(ansi + '\n' + script, {
     document: { getElementById: get, createElement: element,
@@ -44,7 +50,8 @@ async function page({ confirmed = true, job = null } = {}) {
         return Promise.resolve({ ok: true, json: async () => ({ job: null }) });
       }
       if (!url.startsWith('/api/logs?')) {
-        const data = { '/api/session': { token: 'fixture' }, '/api/status': { services: [] }, '/api/job': { job } }[url];
+        if (url === '/api/links' && links instanceof Error) return Promise.reject(links);
+        const data = { '/api/session': { token: 'fixture' }, '/api/status': { services }, '/api/job': { job }, '/api/links': links }[url];
         assert.ok(data, `unexpected non-log fetch ${url}`);
         return Promise.resolve({ ok: true, json: async () => data });
       }
@@ -99,6 +106,48 @@ test('all twelve group controls submit selected actions with accurate confirmati
     }
   }
   assert.equal(p.actions.length, 12);
+});
+
+test('navigation maps external links, warns without disabling stopped services, and closes on Escape', async () => {
+  const p = await page();
+  assert.match(html, /<a href="\/" class="brand">/);
+  assert.match(html, /<details id="nav-api"><summary id="nav-api-summary">API<\/summary>/);
+  assert.match(html, /Swagger \(partial: activation \+ health\)/);
+  for (const [name, path] of Object.entries({ frontend: '/login', dashboard: '/app', admin: '/admin/users', swagger: '/docs', openapi: '/api-docs/openapi.json', health: '/health/ready' })) {
+    const node = p.get(`nav-${name}`);
+    assert.equal(node.href, `https://auth.example:8088${path}`);
+    assert.equal(node.target, '_blank'); assert.equal(node.rel, 'noopener noreferrer');
+    assert.equal(node['aria-disabled'], 'false');
+  }
+  assert.equal(p.get('nav-mailbox').href, 'http://127.0.0.1:18025');
+  assert.equal(p.get('nav-mailbox').rel, 'noopener noreferrer');
+  assert.match(p.get('nav-warning').textContent, /caddy not running; mailpit not running/);
+  p.get('nav-api').open = true;
+  p.get('nav-api').emit('keydown', { key: 'Enter' });
+  assert.equal(p.get('nav-api').open, true);
+  p.get('nav-api').emit('keydown', { key: 'Escape' });
+  assert.equal(p.get('nav-api').open, false);
+  assert.equal(p.get('nav-api-summary').focused, true);
+  assert.equal(p.actions.length, 0);
+});
+
+test('navigation failures remove stale hrefs; Refresh status retries links', async () => {
+  const links = { publicUrl: null, mailboxUrl: null };
+  const p = await page({ links, services: ['caddy', 'mailpit'].map(service => ({ service, containers: [{ state: 'running', health: 'healthy' }] })) });
+  assert.equal(p.get('nav-warning').textContent, '');
+  assert.match(p.get('nav-note').textContent, /Application links unavailable; Mailbox link unavailable/);
+  links.publicUrl = 'http://localhost:8088';
+  await p.get('refresh').emit('click'); await settle();
+  assert.equal(p.get('nav-frontend').href, 'http://localhost:8088/login');
+  links.publicUrl = null;
+  await p.get('refresh').emit('click'); await settle();
+  assert.equal(p.get('nav-frontend').href, undefined);
+  const failed = await page({ links: new Error('config failure') });
+  assert.match(failed.get('nav-note').textContent, /Links unavailable.*Refresh status/);
+  for (const name of ['frontend', 'dashboard', 'admin', 'swagger', 'openapi', 'health', 'mailbox']) {
+    assert.equal(failed.get(`nav-${name}`).href, undefined);
+    assert.equal(failed.get(`nav-${name}`)['aria-disabled'], 'true');
+  }
 });
 
 test('declining group confirmations sends no mutations', async () => {

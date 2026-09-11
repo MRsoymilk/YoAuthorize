@@ -10,7 +10,20 @@
   <script src="/app.js" defer></script>
 </head>
 <body>
-  <header><a href="/" class="brand"><img src="/logo.png" alt="" width="44" height="44"> YoAuthorize</a><span class="tag">HOST / DEVELOPMENT</span></header>
+  <header><a href="/" class="brand"><img src="/logo.png" alt="" width="44" height="44"> YoAuthorize</a>
+    <nav aria-label="Application navigation">
+      <a id="nav-frontend" aria-disabled="true">Frontend</a>
+      <a id="nav-dashboard" aria-disabled="true">Dashboard</a>
+      <a id="nav-admin" aria-disabled="true">Admin</a>
+      <details id="nav-api"><summary id="nav-api-summary">API</summary><div class="api-links">
+        <a id="nav-swagger" aria-disabled="true">Swagger (partial: activation + health)</a>
+        <a id="nav-openapi" aria-disabled="true">OpenAPI</a>
+        <a id="nav-health" aria-disabled="true">Health</a>
+      </div></details>
+      <a id="nav-mailbox" aria-disabled="true">Mailbox</a>
+      <small id="nav-note" role="status">Loading links...</small>
+      <small id="nav-warning" role="status">Service status unknown</small>
+    </nav><span class="tag">HOST / DEVELOPMENT</span></header>
   <main>
     <section class="operation-summary" aria-label="Latest operation"><div class="section-head"><h1>Latest operation</h1><span id="job-state" role="status">Idle</span></div><p id="job-meta">No operation submitted in this manager session.</p></section>
     <p id="error" role="alert" hidden></p>

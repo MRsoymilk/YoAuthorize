@@ -46,6 +46,36 @@ not validated or overwritten. The tools-only bootstrap password is never require
 | api, backend | All five business secrets: postgres-password, database-url, activation-pepper, signer-shared-secret, license-signing-key |
 | caddy, frontend, all | All five business secrets plus `Caddyfile` |
 
+## Navigation
+
+The brand stays on `/`. The adjacent navigation opens new tabs with
+`rel="noopener noreferrer"`: Frontend (`/login`), Dashboard (`/app`), Admin
+(`/admin/users`), and an API dropdown containing Swagger (`/docs`), OpenAPI
+(`/api-docs/openapi.json`), and readiness Health (`/health/ready`). Swagger is
+**partial: activation + health**, not documentation for the entire API. Dashboard
+and Admin retain the application's login and authorization requirements; manager
+access does not sign you in. The native API disclosure supports click and keyboard
+activation; Escape closes it and focuses its summary.
+
+`GET /api/links` runs the same pinned `docker compose config --format json` as
+other manager reads. It returns only a validated HTTP(S) origin from Caddy's
+resolved `environment.PUBLIC_URL` and a Mailbox URL from Mailpit's published TCP
+port targeting 8025. It does not guess from the manager environment or expose
+the full configuration. Credentials, non-root paths, queries and fragments are
+rejected. Public hostnames and configured ports are retained. Mailbox uses only
+local published bindings, translating wildcard IPv4/IPv6 to loopback, never
+container IPs. The default deployment publishes Mailpit at `127.0.0.1:8025`;
+the application normally uses `localhost:8088`, separately from manager port 5002.
+
+Links load once per page and retry/reload on **Refresh status**, not on status/job
+polls. Invalid or unavailable configuration shows explicit unavailable labels and
+entries without hrefs, with no guessed fallback. Truncated config capture (256 KiB)
+is refused; config failures never return Compose stderr or raw parse errors.
+Status warnings indicate Caddy/Mailpit not running or not ready, but valid links
+remain clickable. Navigation does not probe remote URLs or start anything. Use
+the existing explicit Start controls when needed; Frontend Start also starts
+backend dependencies, while Mailpit can be started individually.
+
 ## Controls
 
 | Target | Start | Stop / Restart |

@@ -103,6 +103,33 @@ export function parseStatus(text) {
   })) }));
 }
 
+export function parseLinks(text) {
+  let config;
+  try { config = JSON.parse(text); }
+  catch { throw fail(502, 'Navigation configuration unavailable.'); }
+  let publicUrl = null, mailboxUrl = null;
+  const value = config?.services?.caddy?.environment?.PUBLIC_URL;
+  try {
+    // Reject syntax that URL would silently normalize, including paths and empty query/fragment.
+    if (typeof value !== 'string' || !/^https?:\/\/[^/?#\s\\]+\/?$/i.test(value) || value.includes('@')) throw new Error();
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/') throw new Error();
+    publicUrl = url.origin;
+  } catch { /* Invalid origins stay unavailable; never return the supplied value. */ }
+  const ports = config?.services?.mailpit?.ports;
+  if (Array.isArray(ports)) for (const port of ports) {
+    if (String(port?.target) !== '8025' || (port.protocol && port.protocol !== 'tcp')) continue;
+    if (!/^[1-9]\d{0,4}$/.test(String(port.published)) || Number(port.published) > 65535) continue;
+    const host = port.host_ip || '0.0.0.0';
+    // Only local published bindings, never a container/network address.
+    const loopback = { '0.0.0.0': '127.0.0.1', '127.0.0.1': '127.0.0.1', '::': '[::1]', '::1': '[::1]', '[::]': '[::1]', '[::1]': '[::1]' };
+    if (!Object.hasOwn(loopback, host)) continue;
+    mailboxUrl = `http://${loopback[host]}:${port.published}`;
+    break;
+  }
+  return { publicUrl, mailboxUrl };
+}
+
 export async function checkStartFiles(target, deploy = DEPLOY) {
   actionArgs('start', target);
   // Include secrets mounted by dependencies, matching the development Compose fragments.
@@ -139,6 +166,16 @@ export function createManager({ run = execute, preflight = checkStartFiles } = {
   }
   return {
     get job() { return job; },
+    async links() {
+      try {
+        const result = await read(['config', '--format', 'json']);
+        if (result.truncated) throw new Error();
+        return parseLinks(result.stdout);
+      } catch {
+        // Compose diagnostics can include interpolated secrets, even on failure.
+        throw fail(502, 'Navigation configuration unavailable. Check local Compose configuration and retry Refresh status.');
+      }
+    },
     async status() {
       const result = await read(['ps', '-a', '--format', 'json']);
       if (result.truncated) throw fail(502, 'Status output exceeded the capture limit.');
@@ -267,6 +304,7 @@ export function createServer({ manager = createManager(), port = 5002 } = {}) {
       }
       if (req.method === 'GET' && req.url === '/api/session') return json(200, { token });
       if (req.method === 'GET' && req.url === '/api/status') return json(200, { services: await manager.status() });
+      if (req.method === 'GET' && req.url === '/api/links') return json(200, await manager.links());
       if (req.method === 'GET' && req.url === '/api/job') return json(200, { job: manager.job });
       if (req.method === 'GET' && url.pathname === '/api/logs') {
         if ([...url.searchParams.keys()].some(key => !['service', 'tail'].includes(key)) ||

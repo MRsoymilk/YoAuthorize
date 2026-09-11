@@ -8,9 +8,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEPLOY, SERVICES, VISIBLE, OUTPUT_LIMIT, actionArgs, composeArgs, parsePort,
-  parseStatus, validateRequest, checkStartFiles, createManager, createServer, execute } from './server.mjs';
+  parseStatus, parseLinks, validateRequest, checkStartFiles, createManager, createServer, execute } from './server.mjs';
 
 const ok = (stdout = '') => ({ code: 0, stdout, stderr: '', truncated: false });
+const linkConfig = (publicUrl = 'https://auth.example:8088/', ports = [{ target: 8025, published: '18025', host_ip: '127.0.0.1', protocol: 'tcp' }]) => JSON.stringify({
+  services: { caddy: { environment: { PUBLIC_URL: publicUrl, SECRET: 'raw-secret' } }, mailpit: { ports } }, secrets: { password: 'raw-secret' },
+});
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 async function finished(manager) {
   for (let i = 0; i < 100 && ['running', 'checking'].includes(manager.job?.state); i++) {
@@ -69,6 +72,42 @@ test('status accepts arrays, JSON lines and empty stacks; completed migration is
   assert.equal(parseStatus('{"Service":"migrate","State":"exited","ExitCode":1}').at(-1).containers[0].completed, false);
   assert.ok(parseStatus('').every(s => s.containers.length === 0));
   for (const value of ['broken', '[null]', '{}', '{"Service":"api"}', '[{}]']) assert.throws(() => parseStatus(value), { status: 502 });
+});
+
+test('links expose only validated public origin and local published Mailpit port', () => {
+  assert.deepEqual(parseLinks(linkConfig()), { publicUrl: 'https://auth.example:8088', mailboxUrl: 'http://127.0.0.1:18025' });
+  for (const origin of ['http://localhost:8088', 'https://auth.example', 'http://[::1]:8088']) {
+    assert.equal(parseLinks(linkConfig(origin)).publicUrl, origin);
+  }
+  for (const origin of ['ftp://auth.example', 'javascript:alert(1)', '//auth.example', 'http://user:raw-secret@auth.example', 'http://@auth.example',
+    'http://auth.example/path', 'http://auth.example/../', 'http://auth.example?', 'http://auth.example#', 'http://auth.example/?raw-secret',
+    ' http://auth.example', 'http://auth.example\\path', 'http://auth.example:65536', '', null]) {
+    assert.equal(parseLinks(linkConfig(origin)).publicUrl, null, String(origin));
+  }
+  for (const [host, expected] of [['0.0.0.0', '127.0.0.1'], ['::', '[::1]'], ['::1', '[::1]'], [undefined, '127.0.0.1']]) {
+    assert.equal(parseLinks(linkConfig(undefined, [{ target: 8025, published: 8026, host_ip: host }])).mailboxUrl, `http://${expected}:8026`);
+  }
+  for (const port of [{ target: 1025, published: 8025 }, { target: 8025 }, { target: 8025, published: '0' },
+    { target: 8025, published: '65536' }, { target: 8025, published: '8000-9000' }, { target: 8025, published: 8025, protocol: 'udp' },
+    { target: 8025, published: 8025, host_ip: '172.18.0.2' }]) {
+    assert.equal(parseLinks(linkConfig(undefined, [port])).mailboxUrl, null);
+  }
+  assert.deepEqual(parseLinks('{}'), { publicUrl: null, mailboxUrl: null });
+  assert.throws(() => parseLinks('raw-secret'), error => error.status === 502 && !error.message.includes('raw-secret'));
+});
+
+test('links pin Compose config, reject truncation, and sanitize every execution failure', async () => {
+  const manager = createManager({ run: async (args, options) => {
+    assert.deepEqual(args, composeArgs(['config', '--format', 'json']));
+    assert.equal(options, undefined);
+    return ok(linkConfig());
+  } });
+  assert.deepEqual(await manager.links(), parseLinks(linkConfig()));
+  for (const result of [{ ...ok(linkConfig()), truncated: true }, { ...ok(), code: 1, stderr: 'raw-secret' },
+    { ...ok(), error: 'raw-secret' }, { ...ok(), timedOut: true }, ok('raw-secret')]) {
+    await assert.rejects(createManager({ run: async () => result }).links(), error => error.status === 502 && !error.message.includes('raw-secret'));
+  }
+  await assert.rejects(createManager({ run: async () => { throw new Error('raw-secret'); } }).links(), /Navigation configuration unavailable/);
 });
 
 test('Host, Origin, fetch metadata, token and JSON restrictions', () => {
@@ -285,7 +324,8 @@ test('execute puts ANSI flags before Compose subcommands and sets per-command en
 
 test('HTTP smoke: explicit assets, security, body limits, logs and concurrent action polling', async t => {
   const gate = deferred();
-  const manager = createManager({ run: args => args.includes('stop') ? gate.promise : Promise.resolve(ok('[]')) });
+  let configResult = ok(linkConfig());
+  const manager = createManager({ run: args => args.includes('stop') ? gate.promise : Promise.resolve(args.includes('config') ? configResult : ok('[]')) });
   const server = createServer({ manager, port: () => server.address().port });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => { gate.resolve(ok()); server.closeAllConnections(); return new Promise(resolve => server.close(resolve)); });
@@ -309,6 +349,17 @@ test('HTTP smoke: explicit assets, security, body limits, logs and concurrent ac
   }
   assert.equal((await request('/api/session', { headers: { Host: 'evil.test' } })).status, 403);
   assert.equal((await request('/api/status', { headers: { Origin: 'http://evil.test' } })).status, 403);
+  for (const headers of [{ Host: 'evil.test' }, { Origin: 'http://evil.test' }, { 'Sec-Fetch-Site': 'cross-site' }]) {
+    assert.equal((await request('/api/links', { headers })).status, 403);
+  }
+  const links = await request('/api/links');
+  assert.equal(links.status, 200);
+  assert.deepEqual(JSON.parse(links.text), parseLinks(linkConfig()));
+  assert.doesNotMatch(links.text, /raw-secret|environment|secrets/);
+  configResult = { ...ok(), code: 1, stderr: 'raw-secret' };
+  const failedLinks = await request('/api/links');
+  assert.equal(failedLinks.status, 502);
+  assert.doesNotMatch(failedLinks.text, /raw-secret/);
   const session = await request('/api/session');
   assert.equal(session.headers['access-control-allow-origin'], undefined);
   assert.match(session.headers['content-security-policy'], /frame-ancestors 'none'/);

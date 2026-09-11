@@ -3,6 +3,35 @@ const names = ['postgres', 'redis', 'mailpit', 'signer', 'api', 'web', 'caddy', 
 const descriptions = { postgres: 'Persistent database', redis: 'Cache', mailpit: 'Development mail', signer: 'License signing', api: 'Authorization backend', web: 'Frontend', caddy: 'HTTP gateway', migrate: 'One-shot / manual rerun' };
 let token, busy = false, submitting = false, statusLoading = false;
 let logsLoading = false, logsPending = false, logRevision = 0, logTimer;
+let linksLoading = false;
+const destinations = { frontend: '/login', dashboard: '/app', admin: '/admin/users', swagger: '/docs', openapi: '/api-docs/openapi.json', health: '/health/ready', mailbox: '' };
+
+async function links() {
+  if (linksLoading) return;
+  linksLoading = true;
+  let data = {};
+  try {
+    data = await api('/api/links');
+    $('nav-note').textContent = [!data.publicUrl && 'Application links unavailable', !data.mailboxUrl && 'Mailbox link unavailable'].filter(Boolean).join('; ');
+  } catch {
+    $('nav-note').textContent = 'Links unavailable. Retry with Refresh status.';
+  } finally {
+    for (const [name, path] of Object.entries(destinations)) {
+      const node = $(`nav-${name}`), base = name === 'mailbox' ? data.mailboxUrl : data.publicUrl;
+      node.target = '_blank'; node.rel = 'noopener noreferrer';
+      node.setAttribute('aria-disabled', String(!base));
+      if (base) node.href = base + path;
+      else node.removeAttribute('href');
+    }
+    linksLoading = false;
+  }
+}
+$('nav-api').addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    $('nav-api').open = false;
+    $('nav-api-summary').focus();
+  }
+});
 
 async function api(url, options) {
   const response = await fetch(url, { ...options, signal: AbortSignal.timeout(35_000) });
@@ -40,6 +69,11 @@ async function status() {
   statusLoading = true; $('refresh').disabled = true;
   try {
     const data = await api('/api/status');
+    $('nav-warning').textContent = ['caddy', 'mailpit'].map(name => {
+      const containers = data.services.find(row => row.service === name)?.containers;
+      return !containers?.length || containers.some(c => c.state !== 'running') ? `${name} not running` :
+        containers.some(c => c.health && c.health !== 'healthy') ? `${name} not ready` : '';
+    }).filter(Boolean).join('; ');
     for (const { service, containers } of data.services) {
       const node = $(`state-${service}`);
       node.textContent = containers.length ? containers.map(c => c.completed ? 'Completed / exit 0' :
@@ -49,6 +83,7 @@ async function status() {
     }
     $('status-note').textContent = `Last checked ${new Date().toLocaleTimeString()}. Container health is separate from operation progress.`;
   } catch (e) {
+    $('nav-warning').textContent = 'Service status unavailable';
     $('status-note').textContent = `Status unavailable: ${e.message}`;
     for (const name of names) { $(`state-${name}`).textContent = 'Unknown / status unavailable'; $(`state-${name}`).className = 'state'; }
   } finally { statusLoading = false; $('refresh').disabled = false; }
@@ -106,7 +141,7 @@ function selectLogs() {
   $('log-note').textContent = `Waiting for ${$('log-service').value} logs...`;
   void loadLogs();
 }
-$('refresh').addEventListener('click', status);
+$('refresh').addEventListener('click', () => { void links(); return status(); });
 $('logs-refresh').addEventListener('click', loadLogs);
 $('log-service').addEventListener('change', selectLogs);
 $('log-tail').addEventListener('change', selectLogs);
@@ -124,5 +159,5 @@ async function poll() {
   } catch (e) { busy = true; controls(); $('job-state').textContent = `Connection unavailable: ${e.message}`; }
   setTimeout(poll, 1500);
 }
-controls(); poll(); status();
+controls(); poll(); status(); links();
 setInterval(status, 8000);
