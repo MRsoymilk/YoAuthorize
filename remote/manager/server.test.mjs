@@ -135,7 +135,7 @@ test('start preflight reports files without generating secrets', async t => {
   t.after(() => rm(dir, { recursive: true, force: true }));
   await assert.rejects(checkStartFiles('all', dir), error => error.status === 422 && error.message.includes('Nothing was initialized'));
   await mkdir(path.join(dir, 'secrets'));
-  for (const name of ['.env', 'compose.yaml', 'compose.backend.yaml', 'compose.infrastructure.yaml', 'compose.web.yaml', 'Caddyfile',
+  for (const name of ['.env', 'compose.yaml', 'compose.backend.yaml', 'compose.infrastructure.yaml', 'compose.web.yaml', 'Caddyfile', 'Caddy.routes',
     'secrets/postgres-password', 'secrets/database-url', 'secrets/activation-pepper', 'secrets/signer-shared-secret', 'secrets/license-signing-key']) {
     await writeFile(path.join(dir, name), name === '.env' ? '' : 'test fixture');
   }
@@ -144,7 +144,7 @@ test('start preflight reports files without generating secrets', async t => {
   await assert.rejects(checkStartFiles('all', dir), /database-url/);
 });
 
-test('preflight requires only target/dependency secrets and Caddyfile only when needed', async t => {
+test('preflight requires only target/dependency secrets and Caddy files only when needed', async t => {
   const business = ['postgres-password', 'database-url', 'activation-pepper', 'signer-shared-secret', 'license-signing-key'];
   const targets = {
     redis: [], mailpit: [], web: [], postgres: ['postgres-password'],
@@ -157,10 +157,10 @@ test('preflight requires only target/dependency secrets and Caddyfile only when 
     const common = ['.env', 'compose.yaml', 'compose.backend.yaml', 'compose.infrastructure.yaml', 'compose.web.yaml'];
     for (const file of common) await writeFile(path.join(dir, file), file === '.env' ? '' : 'fixture');
     const required = secrets.map(name => `secrets/${name}`);
-    if (['caddy', 'frontend', 'all'].includes(target)) required.push('Caddyfile');
+    if (['caddy', 'frontend', 'all'].includes(target)) required.push('Caddyfile', 'Caddy.routes');
     if (secrets.length) await mkdir(path.join(dir, 'secrets'));
     for (const file of required) await writeFile(path.join(dir, file), 'fixture');
-    // No unrelated secrets or Caddyfile exist; secret-free targets have no secrets directory.
+    // No unrelated secrets or Caddy files exist; secret-free targets have no secrets directory.
     await checkStartFiles(target, dir);
     for (const file of [...common, ...required]) {
       await rm(path.join(dir, file));

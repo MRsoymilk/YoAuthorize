@@ -17,9 +17,9 @@ docker compose ps -a
 docker compose logs --tail=100 migrate api signer
 ```
 
-`init-secrets.sh` is **fresh-install only**: it refuses if `secrets/` already exists, even after a partial initialization. It creates a mode-0700 directory and six random secret files. If `.env` does not exist, it creates one containing **only `LOCAL_UID` and `LOCAL_GID`**. It does not copy `.env.example` or merge variables into an existing `.env`. If you created `.env` first, set those IDs yourself to the secret owner's numeric IDs. Do not overwrite generated `.env` with example IDs or delete existing keys to make initialization succeed. Review any partial installation manually.
+`init-secrets.sh` is **fresh-install only**: it refuses if `secrets/` already exists, even after a partial initialization. It creates a mode-0700 directory and six random secret files. If `.env` does not exist, it creates one containing the invoking user's `LOCAL_UID` and `LOCAL_GID` plus the port defaults and `FRONTEND_API_TARGET` listed below. It leaves `PUBLIC_URL` unset. It does not copy `.env.example` or modify an existing `.env`. If you created `.env` first, set those IDs yourself to the secret owner's numeric IDs and merge any desired port settings manually. Do not overwrite generated `.env` with example IDs or delete existing keys to make initialization succeed. Review any partial installation manually.
 
-The defaults serve the UI at <http://localhost:8088>, Swagger at <http://localhost:8088/docs>, readiness at <http://localhost:8088/health/ready>, and captured development mail at <http://localhost:8025>. API port 8080, signer 8090, PostgreSQL 5432, Redis 6379, and Nginx 80 are not published to the host. Caddy publishes only `127.0.0.1:8088`; Mailpit publishes only `127.0.0.1:8025`.
+The defaults serve the UI at <http://localhost:8088>, Swagger at <http://localhost:8088/docs>, readiness at <http://localhost:8088/health/ready>, and captured development mail at <http://localhost:8025>. API port 8080, signer 8090, PostgreSQL 5432, Redis 6379, and Nginx 80 are not published to the host. Development Caddy and Mailpit bind only to host loopback, at ports 8088 and 8025 by default.
 
 Set `BOOTSTRAP_ADMIN_EMAIL` in `.env` (and optionally `BOOTSTRAP_ADMIN_NAME`), then provision once:
 
@@ -31,12 +31,18 @@ Retrieve `secrets/bootstrap-admin-password` privately through your local secret-
 
 ## Configuration And Layout
 
-Use [.env.example](.env.example) as a reference and merge intended settings into the generated `.env`. Compose reads this for interpolation; host Rust binaries do not automatically read dotenv. Keep `.env` private, especially when it contains SMTP credentials, and never commit it or `secrets/`.
+Use [.env.example](.env.example) as a reference and merge intended settings into `remote/deploy/.env`. For the settings below, precedence is process environment, then deployment `.env`, then defaults. `start-development.sh` explicitly passes this file to Compose; direct commands below run from `remote/deploy`. The host manager reads its port from this file, and Vite loads its frontend settings there (including Vite's standard mode/local env variants). Host Rust binaries do not automatically read dotenv. Keep `.env` private, especially when it contains SMTP credentials, and never commit it or `secrets/`.
 
 | Setting | Default/meaning |
 | --- | --- |
-| `PUBLIC_URL` | `http://localhost:8088`; Caddy site address and API-generated links |
-| `YOAUTHORIZE_HTTP_PORT` | `8088`; development host port only |
+| `PUBLIC_URL` | Explicit external origin is authoritative; when absent/empty in Compose, derived as `http://localhost:${YOAUTHORIZE_HTTP_PORT:-8088}`. Used for API-generated links and production redirects/site hostname, not the development listener |
+| `YOAUTHORIZE_HTTP_PORT` | `8088`; loopback development host port mapped to fixed container port 8088 |
+| `MANAGER_PORT` | `5002`; optional host Node manager listener, not a container port |
+| `MAILPIT_HTTP_PORT` | `8025`; loopback Mailpit UI host port mapped to container 8025; does not change SMTP |
+| `FRONTEND_DEV_PORT` | `5173`; host Vite listener with `strictPort` (fails rather than choosing another port) |
+| `FRONTEND_API_TARGET` | `http://localhost:8088`; Vite `/api` proxy HTTP(S) origin; set separately when changing the app host port |
+| `YOAUTHORIZE_PRODUCTION_HTTP_PORT` | `80`; production host TCP port mapped to fixed container 80 |
+| `YOAUTHORIZE_PRODUCTION_HTTPS_PORT` | `443`; production host TCP/UDP port mapped to fixed container 443 |
 | `COOKIE_SECURE` | `false` in Compose development (standalone API default is true) |
 | `SMTP_URL` | `smtp://yoauthorize-mailpit:1025` |
 | `MAIL_FROM` | `YoAuthorize <no-reply@localhost>` |
@@ -45,11 +51,23 @@ Use [.env.example](.env.example) as a reference and merge intended settings into
 | `DOCKER_BUILD_NETWORK` | `default`; optional Linux `host` for host-loopback build proxy |
 | `YOAUTHORIZE_REMOTE_DIR` | Defaults to `..`; root for relocated backend/frontend/deploy paths |
 
-Changing the host port alone does not change generated URLs or Caddy's configured site. Keep the external URL and listener/forwarding configuration consistent; default development container port mapping targets 8088.
+For example, merge these custom development values into `.env`, retaining your UID/GID and other settings:
 
-`compose.yaml` is the entry point and declares shared secrets, networks, volumes, and all nine services. It extends same-directory fragments: [backend](compose.backend.yaml), [infrastructure](compose.infrastructure.yaml), and [web](compose.web.yaml). Fragments are not standalone stacks and need no extra `-f` flags. [Caddyfile](Caddyfile) routes public API, health, and docs requests to the API and other paths to the SPA.
+```dotenv
+YOAUTHORIZE_HTTP_PORT=9088
+MAILPIT_HTTP_PORT=9025
+MANAGER_PORT=5012
+FRONTEND_DEV_PORT=5174
+FRONTEND_API_TARGET=http://localhost:9088
+```
 
-Optional host service controls: run `node remote/manager/server.mjs` from the repository root and open <http://127.0.0.1:5002>. Starting the manager does not start containers. See [Host Manager](../manager/README.md) for prerequisites/security. The optional `node remote/deploy/test-paths.mjs` checks relocated/symlinked Compose paths without starting containers or copying secrets.
+With `PUBLIC_URL` unset in both process environment and `.env`, the app and generated links use `http://localhost:9088`, mail UI uses `http://localhost:9025`, manager uses `http://127.0.0.1:5012`, and Vite uses port 5174. An existing explicit `PUBLIC_URL` is not rewritten when the host port changes; update it deliberately if needed. Existing `.env` files are not migrated, so do not assume every existing deployment retains the same behavior when adopting these changes.
+
+After editing configuration, apply only the relevant changes: from `remote/deploy`, `docker compose up -d caddy api` applies app port/URL changes and `docker compose up -d mailpit` applies its UI port change. Use both Compose files for production. `docker compose restart` does not apply changed environment or port mappings. Restart the host Node manager process after changing `MANAGER_PORT`, not a Docker service; restart the Vite dev process after changing either frontend setting. If you edit only mounted Caddy routing configuration, restart Caddy with `docker compose restart caddy` (with both files in production).
+
+`compose.yaml` is the entry point and declares shared secrets, networks, volumes, and all nine services. It extends same-directory fragments: [backend](compose.backend.yaml), [infrastructure](compose.infrastructure.yaml), and [web](compose.web.yaml). Fragments are not standalone stacks and need no extra `-f` flags. Development [Caddyfile](Caddyfile) listens on fixed `http://:8088`, decoupled from `PUBLIC_URL`. Shared [Caddy.routes](Caddy.routes), mounted in both development and production, routes public API, health, and docs requests to the API and other paths to the SPA. Production uses [Caddyfile.production](Caddyfile.production) and [start-caddy-production.sh](start-caddy-production.sh) instead.
+
+Optional host service controls: run `node remote/manager/server.mjs` from the repository root and open <http://127.0.0.1:5002> by default (or your `MANAGER_PORT`). Starting the manager does not start containers. See [Host Manager](../manager/README.md) for prerequisites/security and supported literal port syntax. The optional `node remote/deploy/test-paths.mjs` checks relocated/symlinked Compose paths without starting containers or copying secrets.
 
 ## Networks And Lifecycle
 
@@ -77,7 +95,7 @@ API and signer services have read-only root filesystems and `/tmp` tmpfs. The AP
 
 ## Production
 
-Use a real hostname pointing to this server, reachable TCP 80/443 for Caddy HTTPS/ACME, and UDP 443 if using HTTP/3. Persist Caddy data/config volumes. Set values in private `.env`, retaining correct UID/GID and existing key identity:
+Use a real DNS hostname pointing to this server. The production startup script requires an HTTPS DNS origin in `PUBLIC_URL`, optionally with an external port, not a path/query/fragment or credentials. IP literals are not a supported production configuration, and IPv6 literals are unsupported by the parser. Persist Caddy data/config volumes. Set values in private `.env`, retaining correct UID/GID and existing key identity:
 
 ```dotenv
 PUBLIC_URL=https://licenses.example.com
@@ -96,7 +114,22 @@ docker compose -f compose.yaml -f compose.production.yaml --profile tools run --
 docker compose -f compose.yaml -f compose.production.yaml ps -a
 ```
 
-The override replaces development Caddy ports with public TCP 80/443 and UDP 443 and replaces external `dev-net` with an isolated project bridge. It does not require development network initialization. It **still includes Mailpit**, including its loopback 8025 UI, and does not itself replace SMTP defaults. Configure real SMTP and review whether to remove Mailpit via an operator-maintained deployment configuration. Do not expose its UI publicly. API/database/Redis/signer ports remain unpublished. Review firewall, admin access, logs, resource limits, monitoring, image provenance/pinning, and recovery before serving real users.
+The override replaces development Caddy ports with host TCP 80/443 and UDP 443 by default, configurable through the production port variables, always targeting container 80/443. `start-caddy-production.sh` derives `CADDY_SITE_ADDRESS=https://<hostname>:443` from `PUBLIC_URL`, ignoring its external port for the internal TLS listener. Automatic HTTPS redirects are disabled in favor of an explicit HTTP redirect to `PUBLIC_URL` plus the request URI, preserving an external port such as `:10443`.
+
+For a directly exposed custom-port installation, merge:
+
+```dotenv
+PUBLIC_URL=https://licenses.example.com:10443
+YOAUTHORIZE_PRODUCTION_HTTP_PORT=10080
+YOAUTHORIZE_PRODUCTION_HTTPS_PORT=10443
+COOKIE_SECURE=true
+```
+
+This maps host 10080 to container 80 and host 10443 TCP/UDP to container 443; HTTP requests redirect to `https://licenses.example.com:10443` with their URI. Port mappings and the external origin are independent: if external NAT forwards public 443 to host 10443, use `PUBLIC_URL=https://licenses.example.com` instead, keeping the host mapping at 10443.
+
+Custom mappings do **not** move ACME validation to those public ports. Standard HTTP-01/TLS-ALPN-01 validation still needs public TCP 80/443 reaching Caddy, directly or through external forwarding. If unavailable, arrange an alternative certificate strategy (such as operator-configured DNS-01 or supplied certificates); the shipped configuration does not provide it. Forward the external HTTPS UDP port too if using HTTP/3.
+
+Production also replaces external `dev-net` with an isolated project bridge and does not require development network initialization. It **still includes Mailpit**, including its loopback UI (`MAILPIT_HTTP_PORT`, default 8025), and does not itself replace SMTP defaults. Configure real SMTP and review whether to remove Mailpit via an operator-maintained deployment configuration. Do not expose its UI publicly. API/database/Redis/signer ports remain unpublished. Review firewall, admin access, logs, resource limits, monitoring, image provenance/pinning, and recovery before serving real users.
 
 ## Backup And Restore
 
@@ -117,7 +150,7 @@ mkdir "$backup_dir"
 "${dc[@]}" exec -T postgres pg_dump -U yoauthorize -d yoauthorize -Fc > "$backup_dir/database.dump"
 test -s "$backup_dir/database.dump"
 "${dc[@]}" exec -T postgres pg_restore --list < "$backup_dir/database.dump" > "$backup_dir/database.contents"
-tar -czf "$backup_dir/private-config.tgz" .env secrets compose.yaml compose.backend.yaml compose.infrastructure.yaml compose.web.yaml compose.production.yaml Caddyfile
+tar -czf "$backup_dir/private-config.tgz" .env secrets compose.yaml compose.backend.yaml compose.infrastructure.yaml compose.web.yaml compose.production.yaml Caddyfile Caddy.routes Caddyfile.production start-caddy-production.sh
 "${dc[@]}" images > "$backup_dir/images.txt"
 git rev-parse HEAD > "$backup_dir/revision.txt"
 "${dc[@]}" start api caddy
@@ -153,6 +186,21 @@ Record source revision and immutable image digests/tags before upgrade; `:local`
 SQLx migrations are embedded in the binary and tracked in the database. The repository provides forward migrations, not a general down-migration/rollback tool. Do not edit previously applied migration files or assume an old API can read a newer schema. If schema compatibility is not established, rollback means restoring the pre-upgrade database **and matching application release/config/keys** into an isolated replacement and switching traffic after verification. Writes made after that backup require a separate reconciliation plan and may be lost. Never regenerate keys, prune volumes, or run bootstrap as a rollback workaround.
 
 ## Troubleshooting
+
+Port regression checks (from the repository root):
+
+```bash
+node --test remote/deploy/test-ports.mjs
+node remote/deploy/test-paths.mjs
+# Optional: requires the running dev API/dev-net and cached caddy:2.10-alpine.
+node remote/deploy/test-caddy-ports.mjs --docker
+```
+
+The optional Docker check creates and removes dedicated loopback-only test
+containers. It checks development forwarding and production-style redirects/TLS
+on temporary ports using a local test CA, not public ACME. It verifies the HTTP/3
+`Alt-Svc` advertisement uses the port in `PUBLIC_URL`; it does not test an actual
+HTTP/3 connection or production certificate issuance.
 
 - Missing `dev-net`: use `start-development.sh` for development, not production; inspect existing driver/consumers before changing networks.
 - Signer permission/startup failure: verify owner UID/GID and 0400/0600 seed permissions. Do not loosen key access.

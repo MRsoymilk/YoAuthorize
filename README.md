@@ -43,6 +43,8 @@ cd remote/deploy
 ./start-development.sh -d --build
 ```
 
-Open <http://localhost:8088>; development mail is captured at <http://localhost:8025>. Set `BOOTSTRAP_ADMIN_EMAIL` in `remote/deploy/.env`, then run `docker compose --profile tools run --rm bootstrap-admin` from that directory. Retrieve the generated password privately from `secrets/bootstrap-admin-password`.
+By default, open <http://localhost:8088>; development mail is captured at <http://localhost:8025>. Fresh initialization creates `remote/deploy/.env` with your UID/GID, centralized host port defaults, and the Vite API proxy target; an existing `.env` is left untouched. Process environment overrides `.env`, which overrides defaults. Configure `YOAUTHORIZE_HTTP_PORT`, `MAILPIT_HTTP_PORT`, `MANAGER_PORT`, `FRONTEND_DEV_PORT`, and `FRONTEND_API_TARGET` there as needed. When `PUBLIC_URL` is absent, Compose derives `http://localhost:<YOAUTHORIZE_HTTP_PORT>`; an explicit `PUBLIC_URL` remains authoritative. See the [deployment configuration](remote/deploy/README.md#configuration-and-layout) for custom-port examples and which services/processes to restart after edits.
+
+Set `BOOTSTRAP_ADMIN_EMAIL` in `remote/deploy/.env`, then run `docker compose --profile tools run --rm bootstrap-admin` from that directory. Retrieve the generated password privately from `secrets/bootstrap-admin-password`.
 
 Do not rerun secret initialization on an existing installation or replace its keys. Read the [deployment guide](remote/deploy/README.md) for existing environments, production TLS/SMTP, backups, or upgrades. Compose runs the explicit migration tool before the API; the API itself does not migrate the database.

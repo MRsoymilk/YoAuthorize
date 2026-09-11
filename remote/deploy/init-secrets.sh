@@ -23,5 +23,9 @@ chmod 644 "$secret_dir/activation-pepper" "$secret_dir/signer-shared-secret" \
 chmod 600 "$secret_dir/license-signing-key" "$secret_dir/bootstrap-admin-password"
 if [[ ! -e "$deploy_dir/.env" ]]; then
   printf 'LOCAL_UID=%s\nLOCAL_GID=%s\n' "$(id -u)" "$(id -g)" >"$deploy_dir/.env"
+  printf '%s\n' 'YOAUTHORIZE_HTTP_PORT=8088' 'MANAGER_PORT=5002' \
+    'MAILPIT_HTTP_PORT=8025' 'FRONTEND_DEV_PORT=5173' \
+    'FRONTEND_API_TARGET=http://localhost:8088' \
+    'YOAUTHORIZE_PRODUCTION_HTTP_PORT=80' 'YOAUTHORIZE_PRODUCTION_HTTPS_PORT=443' >>"$deploy_dir/.env"
 fi
 printf 'Development secrets created under %s\n' "$secret_dir"

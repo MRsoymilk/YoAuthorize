@@ -46,7 +46,7 @@ try {
     }
     assert.equal(config.services.web.build.context, path.join(remote, 'frontend'));
     const bind = config.services.caddy.volumes.find(volume => volume.type === 'bind');
-    assert.equal(bind.source, path.join(deploy, 'Caddyfile'));
+    assert.equal(bind.source, path.join(deploy, production ? 'Caddyfile.production' : 'Caddyfile'));
     const files = {
       postgres_password: 'postgres-password', database_url: 'database-url',
       activation_pepper: 'activation-pepper', signer_shared_secret: 'signer-shared-secret',

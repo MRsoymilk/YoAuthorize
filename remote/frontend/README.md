@@ -11,11 +11,24 @@ npm ci
 npm run dev
 ```
 
-Vite requests port 5173 (it may select another if occupied). Its development proxy forwards `/api` to **`http://localhost:8080`**. Compose does **not** publish API port 8080, so starting Compose and Vite alone does not connect this proxy to the API.
+For the `serve` command outside test mode, Vite reads server-only development settings from the central `remote/deploy/.env` using Vite's standard `loadEnv` behavior (including mode-specific/local files and variable expansion). Builds and test mode skip deploy loading and dev-setting validation. The directory is resolved relative to `vite.config.ts`, not the shell's working directory. Existing process environment values override the file values. Restart Vite after changing settings.
 
-For the unchanged Vite configuration, run a host API on `127.0.0.1:8080` with host-reachable dependencies as described in [backend development](../backend/README.md). Alternatively use an operator-managed loopback forwarding proxy at 8080 to Compose Caddy at `http://localhost:8088`, with the appropriate upstream Host header. Do not expose the signer to make frontend development work. The simplest full-stack option is the Compose UI at `http://localhost:8088`, without Vite.
+| Setting | Default | Constraints |
+| --- | --- | --- |
+| `FRONTEND_DEV_PORT` | `5173` | Digits only, integer 1 through 65535; Vite fails if occupied rather than choosing another port |
+| `FRONTEND_API_TARGET` | `http://localhost:8088` | HTTP(S) origin, optional trailing `/`; no credentials, other path, query, or fragment |
 
-Set the host API's `PUBLIC_URL` to the SPA origin so mail verification/reset links return to Vite. Use `COOKIE_SECURE=false` only for local HTTP. Vite proxies `/api`, not `/health`, `/docs`, or `/api-docs`; access these through the backend/Caddy origin.
+The default proxy forwards `/api` unchanged to **Compose Caddy**, which routes API requests independently of the development hostname. `changeOrigin: true` sends the target's Host header; the configured hostname is retained rather than replaced with an IP. Compose does not need to publish the API's port 8080. Do not expose the signer to make frontend development work. The Compose UI at `http://localhost:8088` is also available without Vite.
+
+For a host Rust API with host-reachable dependencies, follow [backend development](../backend/README.md) and override the proxy target:
+
+```bash
+FRONTEND_API_TARGET=http://localhost:8080 npm run dev
+```
+
+Set the API's `PUBLIC_URL` to the browser-facing frontend origin (for example, `http://localhost:5173`) when verification/reset email links should return to Vite. This applies to the Compose API too: retaining the Compose origin sends email links to the Compose UI, not Vite. The proxy target and `PUBLIC_URL` serve different purposes; changing the dev port does not update `PUBLIC_URL`. Apply API environment changes by restarting/recreating the API as appropriate. Use `COOKIE_SECURE=false` only for local HTTP. Vite proxies `/api`, not `/health`, `/docs`, or `/api-docs`; access these through the backend/Caddy origin.
+
+Only the two selected deploy keys are used in Vite's server configuration. The client env directory remains `remote/frontend`, with the default public `VITE_` prefix; deploy variables are not copied into client definitions. Never put secrets in `VITE_` variables. The proxy target is an explicit developer setting, not a URL accepted from external requests.
 
 ## Commands
 

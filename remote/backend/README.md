@@ -34,6 +34,10 @@ Binaries read process environment, **not automatic dotenv files**. [.env.example
 
 ## Configuration
 
+For Compose, host ports are centralized in `remote/deploy/.env`, with process environment taking precedence over that file, then defaults. `YOAUTHORIZE_HTTP_PORT` defaults to 8088 and maps to Caddy's fixed development container listener 8088, not API port 8080. When `PUBLIC_URL` is absent/empty, Compose supplies `http://localhost:<YOAUTHORIZE_HTTP_PORT>`; an explicit value is authoritative for generated mail and WebSocket URLs. Standalone Rust binaries still require `PUBLIC_URL` and do not derive it or load `.env` themselves.
+
+`MAILPIT_HTTP_PORT` changes only the captured-mail UI host port (default 8025), not `SMTP_URL`. `MANAGER_PORT`, `FRONTEND_DEV_PORT`, and `FRONTEND_API_TARGET` configure the optional host manager and Vite, not Rust listeners. Production host mappings use `YOAUTHORIZE_PRODUCTION_HTTP_PORT`/`YOAUTHORIZE_PRODUCTION_HTTPS_PORT` (defaults 80/443) while Caddy listens internally on 80/443; set an explicit HTTPS DNS `PUBLIC_URL` matching the client-facing origin, including any external port. See [deployment configuration](../deploy/README.md#configuration-and-layout) and [production](../deploy/README.md#production) for precedence details, restart guidance, forwarding, and ACME requirements.
+
 | API variable | Meaning/default |
 | --- | --- |
 | `LISTEN_ADDR` | `0.0.0.0:8080` |

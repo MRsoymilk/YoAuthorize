@@ -12,10 +12,34 @@ From the repository root:
 
 ```sh
 node remote/manager/server.mjs
-# Open http://127.0.0.1:5002
-# Optional port (integer 1..65535):
+# Open the loopback URL printed at startup (default port 5002)
+# Optional process override (integer 1..65535):
 MANAGER_PORT=5012 node remote/manager/server.mjs
 ```
+
+## Manager Port
+
+At startup, the manager selects its port from the process `MANAGER_PORT`, then
+`MANAGER_PORT` in this checkout's `remote/deploy/.env`, then the default `5002`.
+An explicitly empty value selects `5002`, including an empty process override
+(which skips the file). A missing file or missing key also uses the default, so
+the manager can start before initialization. Other file read errors fail clearly.
+Paths are module-relative even when launched from another working directory.
+
+The file accepts literal ports such as `MANAGER_PORT=5012`, optional `export`,
+whitespace around the assignment, single or double quotes, and trailing comments
+(`MANAGER_PORT=5012 # local manager`). Unquoted comments require whitespace;
+spaces inside quotes are part of the value. Empty quotes also select the default.
+Repeated assignments use the last value; every present assignment must be valid.
+Invalid ports, interpolation (such as `${PORT:-5002}`), escapes, and multiline
+port values fail with instructions to use a literal port or process override.
+This is intentionally not a general Compose `.env` evaluator.
+
+Only the manager port is extracted: no shell or Compose configuration command is
+run for this lookup, no file values are logged, and nothing is loaded into
+`process.env`. Unrelated quoted multiline values are skipped. The port is read
+once, not on refresh; relaunch the manager to apply changes. Host validation uses
+the selected port. Node.js 20+ remains supported without dependencies.
 
 The server always binds `127.0.0.1`. Deployment and asset paths resolve from the
 module location, not the shell's working directory. Startup only verifies
@@ -44,7 +68,7 @@ not validated or overwritten. The tools-only bootstrap password is never require
 | migrate | `secrets/postgres-password`, `secrets/database-url` |
 | signer | `secrets/license-signing-key`, `secrets/signer-shared-secret` |
 | api, backend | All five business secrets: postgres-password, database-url, activation-pepper, signer-shared-secret, license-signing-key |
-| caddy, frontend, all | All five business secrets plus `Caddyfile` |
+| caddy, frontend, all | All five business secrets plus `Caddyfile` and `Caddy.routes` |
 
 ## Navigation
 

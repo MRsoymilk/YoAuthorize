@@ -23,6 +23,45 @@ export function parsePort(value = '5002') {
   return Number(value);
 }
 
+export async function loadManagerPort({ env = process.env, deploy = DEPLOY, readEnvFile = readFile } = {}) {
+  if (env.MANAGER_PORT !== undefined) return parsePort(env.MANAGER_PORT === '' ? undefined : env.MANAGER_PORT);
+  let text;
+  try { text = await readEnvFile(path.join(deploy, '.env'), 'utf8'); }
+  catch (error) {
+    if (error.code === 'ENOENT') return parsePort();
+    throw new Error('Cannot read remote/deploy/.env for MANAGER_PORT. Check file permissions or set MANAGER_PORT in the process environment.');
+  }
+  let port = 5002, quote = null;
+  for (const line of text.split(/\r?\n/)) {
+    let start = 0;
+    // Skip unrelated quoted values, including multiline secrets, without decoding or storing them.
+    if (!quote) {
+      const target = line.match(/^\s*(?:export\s+)?MANAGER_PORT(?=\s|=|$)(.*)$/);
+      if (target) {
+        const assignment = target[1].match(/^\s*=\s*(.*)$/);
+        const raw = assignment?.[1] ?? '';
+        const value = raw.startsWith("'") || raw.startsWith('"')
+          ? raw.match(/^(['"])(.*?)\1\s*(?:#.*)?$/)?.[2]
+          : raw.replace(/(?:^|\s+)#.*$/, '').trim();
+        if (!assignment || value === undefined || !/^(?:[1-9]\d{0,4})?$/.test(value) || Number(value) > 65535) {
+          throw new Error('Invalid MANAGER_PORT in remote/deploy/.env. Use a literal integer from 1 to 65535 (or empty for 5002); interpolation, escapes and multiline values are unsupported. Set MANAGER_PORT in the process environment to override.');
+        }
+        port = parsePort(value || undefined);
+        continue;
+      }
+      const other = line.match(/^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*=\s*(['"])/);
+      if (!other) continue;
+      quote = other[1];
+      start = other[0].length;
+    }
+    for (let i = start; i < line.length; i++) {
+      if (line[i] === '\\') i++;
+      else if (line[i] === quote) { quote = null; break; }
+    }
+  }
+  return port;
+}
+
 export function composeArgs(args, deploy = DEPLOY) {
   return ['compose', '--project-directory', deploy, '--env-file', path.join(deploy, '.env'),
     '-p', 'yoauthorize', '-f', path.join(deploy, 'compose.yaml'), ...args];
@@ -141,7 +180,7 @@ export async function checkStartFiles(target, deploy = DEPLOY) {
   };
   const files = ['.env', 'compose.yaml', 'compose.backend.yaml', 'compose.infrastructure.yaml', 'compose.web.yaml',
     ...secrets[target].map(name => `secrets/${name}`)];
-  if (['caddy', 'frontend', 'all'].includes(target)) files.push('Caddyfile');
+  if (['caddy', 'frontend', 'all'].includes(target)) files.push('Caddyfile', 'Caddy.routes');
   const missing = [];
   for (const file of files) {
     try {
@@ -332,7 +371,7 @@ export function createServer({ manager = createManager(), port = 5002 } = {}) {
 }
 
 export async function main() {
-  const port = parsePort(process.env.MANAGER_PORT);
+  const port = await loadManagerPort();
   checked(await execute(['compose', 'version']));
   const server = createServer({ port });
   await new Promise((resolve, reject) => {

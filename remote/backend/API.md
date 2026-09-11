@@ -1,6 +1,8 @@
 # Public API Guide
 
-Base path: `/api/v1`. Use the same external origin as the UI (development: `http://localhost:8088`). This guide covers **29 method/path operations on 25 distinct paths**, including aliases and the two root-level health endpoints, excluding documentation endpoints. The source of behavior is [routes.rs](crates/authorization-api/src/routes.rs), [errors](crates/authorization-api/src/error.rs), and [database constraints](crates/authorization-api/migrations/0001_initial.sql).
+Base path: `/api/v1`. Use the same external origin as the UI (default development: `http://localhost:8088`). This guide covers **29 method/path operations on 25 distinct paths**, including aliases and the two root-level health endpoints, excluding documentation endpoints. The source of behavior is [routes.rs](crates/authorization-api/src/routes.rs), [errors](crates/authorization-api/src/error.rs), and [database constraints](crates/authorization-api/migrations/0001_initial.sql).
+
+Compose takes settings from process environment over `remote/deploy/.env` over defaults. With `PUBLIC_URL` absent/empty, it derives `http://localhost:<YOAUTHORIZE_HTTP_PORT>` (port default 8088); an explicit `PUBLIC_URL` remains authoritative for mail links and activation `realtime_url`. Host port mappings do not rewrite an explicit origin. In production, use the external HTTPS DNS origin including any client-facing port, for example `https://licenses.example.com:10443`; generated device URLs then use `wss://licenses.example.com:10443/api/v1/device/events`. Caddy's internal TLS port remains 443. See [deployment](../deploy/README.md#production) for mappings, redirects, and certificate requirements. Standalone API processes require `PUBLIC_URL` explicitly.
 
 Swagger UI: `/docs`; OpenAPI JSON: `/api-docs/openapi.json`. Consult this guide for workflow details and limitations even when using generated schemas. Normal Swagger UI cannot establish/test a WebSocket stream. The [internal signer API](README.md#internal-signer) is separate and must not be exposed publicly.
 
@@ -148,7 +150,7 @@ Redis counters enforce registration 3/hour per normalized email, login 10/15 min
 
 These are illustrative requests, not a script to run against a live deployment. All credentials, codes, IDs, and tokens are placeholders. Registration, login, activation, and admin requests mutate state; use an explicitly disposable environment for manual exercises.
 
-Read-only liveness check:
+Read-only liveness check using the default development origin (substitute your configured external origin):
 
 ```bash
 curl --fail-with-body http://localhost:8088/health/live
