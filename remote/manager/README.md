@@ -51,8 +51,10 @@ not validated or overwritten. The tools-only bootstrap password is never require
 The brand stays on `/`. The adjacent navigation opens new tabs with
 `rel="noopener noreferrer"`: Frontend (`/login`), Dashboard (`/app`), Admin
 (`/admin/users`), and an API dropdown containing Swagger (`/docs`), OpenAPI
-(`/api-docs/openapi.json`), and readiness Health (`/health/ready`). Swagger is
-**partial: activation + health**, not documentation for the entire API. Dashboard
+(`/api-docs/openapi.json`), and readiness Health (`/health/ready`). Swagger covers
+all public HTTP operations and documents the native WebSocket handshake; its
+Try It Out controls do not implement WebSocket sessions. See the
+[API guide](../backend/API.md) for cookie login and CSRF instructions. Dashboard
 and Admin retain the application's login and authorization requirements; manager
 access does not sign you in. The native API disclosure supports click and keyboard
 activation; Escape closes it and focuses its summary.

@@ -4,126 +4,45 @@
 
 # YoAuthorize
 
-Under Development
+YoAuthorize contains a local C++20 licensing service and SDK, plus a remote licensing system with a Rust API, isolated Ed25519 signer, and React management UI. It is under development; the deployment examples are not a claim of production readiness.
 
-## Depencence
+## Start Here
 
-gflags
+| Area | Documentation |
+| --- | --- |
+| Architecture, protocol, security, and roadmap | [Design guide](guide/README.md) (includes future goals) |
+| Native integration | [Local demo](guide/docs/13-local-demo.md), [C++ SDK](guide/docs/08-sdk.md), [License Service](guide/docs/09-service.md), [Qt sample](samples/TestYoQt/README.md) |
+| Remote installation and operations | [Deployment](remote/deploy/README.md) |
+| Rust services and configuration | [Backend](remote/backend/README.md) |
+| HTTP and device WebSocket integration | [Public API guide](remote/backend/API.md) |
+| Browser UI development | [Frontend](remote/frontend/README.md) |
+| Optional local service controls | [Host Manager](remote/manager/README.md) |
 
-C++ 20
+## Local C++ Build
 
-- brpc（RPC适合于内网调用，IO密集型服务）
-- gflags
-- gtest
-- nng
-- simdjson
-- spdlog
-- tomlplusplus
-
-git module add
-
-```bash
-git submodule add https://github.com/gabime/spdlog vendor/spdlog
-git submodule add https://github.com/nanomsg/nng.git vendor/nng
-git submodule add https://github.com/marzer/tomlplusplus.git vendor/tomlplusplus
-git submodule add https://github.com/google/googletest.git vendor/gtest
-git submodule add https://github.com/apache/brpc.git vendor/brpc
-git submodule add https://github.com/simdjson/simdjson.git vendor/simdjson
-```
-
-switch version:
+Use a C++20 compiler, CMake (top-level minimum 3.14; dependencies may require newer), OpenSSL 3.x development libraries, and platform thread support. Initialize pinned submodules rather than adding or checking out arbitrary dependency versions:
 
 ```bash
-cd vendor/nng
-git checkout v1.10.1
-
-cd vendor/spdlog
-git checkout v1.15.2
-
-cd vendor/tomlplusplus
-git checkout v3.4.0
-
-cd vendor/gtest
-git chekcout v1.16.0
+git submodule update --init --recursive
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 ```
 
-### config
+The service and SDK default to enabled. `YOAUTHORIZE_BUILD_TOOLS`, `YOAUTHORIZE_BUILD_SAMPLES` (Qt), and `YOAUTHORIZE_BUILD_LEGACY` default to disabled. See [CMakeLists.txt](CMakeLists.txt) and [license format](guide/docs/04-license-format.md).
 
-- [tomlplusplus](https://github.com/marzer/tomlplusplus)
+Core dependencies include [FlatBuffers](https://github.com/google/flatbuffers), [tomlplusplus](https://github.com/marzer/tomlplusplus), [OpenSSL](https://www.openssl.org/), and [GoogleTest](https://github.com/google/googletest). Legacy/optional modules reference [spdlog](https://github.com/gabime/spdlog), [nng](https://github.com/nanomsg/nng), [SQLite](https://www.sqlite.org/download.html), [MySQL Connector/C++](https://github.com/mysql/mysql-connector-cpp), and [MongoDB C++ driver](https://github.com/mongodb/mongo-cxx-driver). These are not all requirements for the default build.
 
-### driver
+## Remote Quickstart
 
-- [sqlite](https://www.sqlite.org/download.html)
-- [mysql-connector-cpp](https://github.com/mysql/mysql-connector-cpp)
-- [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver)
-- [libpqxx](https://github.com/jtv/libpqxx)
-
-
-#### mysql-connector-cpp
+For a fresh development checkout, install Bash, OpenSSL CLI, Docker Engine, and Docker Compose v2 >= 2.24.4. Run as a non-root user with Docker access:
 
 ```bash
-cd vendor/mysql-connector-cpp
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=./ ../ # default is Debug
-make -j7
-make install
+cd remote/deploy
+./init-secrets.sh
+./start-development.sh -d --build
 ```
 
-#### mongo-cxx-driver
+Open <http://localhost:8088>; development mail is captured at <http://localhost:8025>. Set `BOOTSTRAP_ADMIN_EMAIL` in `remote/deploy/.env`, then run `docker compose --profile tools run --rm bootstrap-admin` from that directory. Retrieve the generated password privately from `secrets/bootstrap-admin-password`.
 
-```bash
-cd vendor/mongo-cxx-driver
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=./ ../ -DCMAKE_BUILD_TYPE=Debug
-make -j7
-make install
-```
-
-## Function
-
-### auth
-
-### connect
-
-### disconnect
-
-### heartbeat
-
-## Architecture
-
-```markdown
-- api
-  - auth
-  - basic
-- log
-- driver
-  - mysql
-  - mongodb
-  - sqlite
-- utils
-  - exe
-  - timer
-  - platform
-  - crypto
-- communicate
-  - arch
-    - single
-    - p2p
-  - module
-    - http
-    - server
-    - client
-      - symmetric encryption
-        - AES
-        - DES
-      - asymmetric encryption
-        - RSA
-        - DSA
-      - hash
-        - MD5
-        - SHA
-      - message authentication code
-      - digital signature
-```
+Do not rerun secret initialization on an existing installation or replace its keys. Read the [deployment guide](remote/deploy/README.md) for existing environments, production TLS/SMTP, backups, or upgrades. Compose runs the explicit migration tool before the API; the API itself does not migrate the database.

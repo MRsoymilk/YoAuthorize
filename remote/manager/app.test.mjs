@@ -112,7 +112,7 @@ test('navigation maps external links, warns without disabling stopped services, 
   const p = await page();
   assert.match(html, /<a href="\/" class="brand">/);
   assert.match(html, /<details id="nav-api"><summary id="nav-api-summary">API<\/summary>/);
-  assert.match(html, /Swagger \(partial: activation \+ health\)/);
+  assert.match(html, /Swagger \(public API\)/);
   for (const [name, path] of Object.entries({ frontend: '/login', dashboard: '/app', admin: '/admin/users', swagger: '/docs', openapi: '/api-docs/openapi.json', health: '/health/ready' })) {
     const node = p.get(`nav-${name}`);
     assert.equal(node.href, `https://auth.example:8088${path}`);
