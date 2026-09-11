@@ -1,0 +1,75 @@
+name: yoauthorize
+
+services:
+  postgres:
+    extends:
+      file: compose.infrastructure.yaml
+      service: postgres
+
+  redis:
+    extends:
+      file: compose.infrastructure.yaml
+      service: redis
+
+  mailpit:
+    extends:
+      file: compose.infrastructure.yaml
+      service: mailpit
+
+  signer:
+    extends:
+      file: compose.backend.yaml
+      service: signer
+
+  migrate:
+    extends:
+      file: compose.backend.yaml
+      service: migrate
+
+  api:
+    extends:
+      file: compose.backend.yaml
+      service: api
+
+  web:
+    extends:
+      file: compose.web.yaml
+      service: web
+
+  caddy:
+    extends:
+      file: compose.web.yaml
+      service: caddy
+
+  bootstrap-admin:
+    extends:
+      file: compose.backend.yaml
+      service: bootstrap-admin
+
+secrets:
+  postgres_password:
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/postgres-password
+  database_url:
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/database-url
+  activation_pepper:
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/activation-pepper
+  signer_shared_secret:
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/signer-shared-secret
+  license_signing_key:
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/license-signing-key
+  bootstrap_admin_password:
+    file: ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/secrets/bootstrap-admin-password
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  dev-net:
+    external: true
+    name: dev-net
+  data:
+    internal: true
+  signing:
+    internal: true

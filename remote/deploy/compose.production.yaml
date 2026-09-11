@@ -1,0 +1,14 @@
+services:
+  caddy:
+    command: ["sh", "/etc/caddy/start-production.sh"]
+    volumes:
+      - ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/Caddyfile.production:/etc/caddy/Caddyfile:ro
+      - ${YOAUTHORIZE_REMOTE_DIR:-..}/deploy/start-caddy-production.sh:/etc/caddy/start-production.sh:ro
+    ports: !override
+      - "${YOAUTHORIZE_PRODUCTION_HTTP_PORT:-80}:80"
+      - "${YOAUTHORIZE_PRODUCTION_HTTPS_PORT:-443}:443"
+      - "${YOAUTHORIZE_PRODUCTION_HTTPS_PORT:-443}:443/udp"
+
+networks:
+  dev-net: !override
+    driver: bridge

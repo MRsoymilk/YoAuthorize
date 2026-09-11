@@ -22,3 +22,6 @@
 [submodule "vendor/json"]
 	path = vendor/json
 	url = https://github.com/nlohmann/json.git
+[submodule "vendor/flatbuffers"]
+	path = vendor/flatbuffers
+	url = https://github.com/google/flatbuffers.git

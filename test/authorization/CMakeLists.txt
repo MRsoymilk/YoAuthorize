@@ -1,0 +1,153 @@
+include(GoogleTest)
+
+add_executable(test_license_protocol
+  test_envelope.cpp
+  test_frame.cpp
+  test_protocol_handshake.cpp
+  test_messages.cpp
+  test_record.cpp
+)
+
+target_include_directories(test_license_protocol PRIVATE
+  ${PROJECT_BINARY_DIR}/generated
+)
+target_link_libraries(test_license_protocol PRIVATE
+  GTest::gtest_main
+  YoAuthorize::protocol
+)
+
+gtest_discover_tests(test_license_protocol)
+
+add_executable(test_license_crypto
+  test_crypto.cpp
+  test_handshake.cpp
+)
+target_link_libraries(test_license_crypto PRIVATE
+  GTest::gtest_main
+  YoAuthorize::crypto
+)
+
+gtest_discover_tests(test_license_crypto)
+
+add_executable(test_license_core
+  test_license.cpp
+  test_machine_identity.cpp
+  test_session.cpp
+)
+target_include_directories(test_license_core PRIVATE
+  ${PROJECT_BINARY_DIR}/generated
+)
+target_link_libraries(test_license_core PRIVATE
+  GTest::gtest_main
+  YoAuthorize::core
+  YoAuthorize::protocol
+)
+
+gtest_discover_tests(test_license_core)
+
+add_executable(test_license_transport test_transport.cpp)
+target_link_libraries(test_license_transport PRIVATE
+  GTest::gtest_main
+  YoAuthorize::transport
+)
+
+gtest_discover_tests(test_license_transport)
+
+if(TARGET ya_license_service)
+  add_executable(test_license_service
+    test_service_config.cpp
+    test_key_store.cpp
+    test_service.cpp
+  )
+  target_link_libraries(test_license_service PRIVATE
+    GTest::gtest_main
+    YoAuthorize::service
+  )
+
+  gtest_discover_tests(test_license_service)
+endif()
+
+if(TARGET ya_license_sdk AND TARGET ya_license_service)
+  add_executable(test_license_sdk test_sdk.cpp)
+  target_link_libraries(test_license_sdk PRIVATE
+    GTest::gtest_main
+    YoAuthorize::sdk
+    YoAuthorize::service
+  )
+
+  gtest_discover_tests(test_license_sdk)
+endif()
+
+if(TARGET ya_license_sdk)
+  add_executable(yoauthorize-test-app test_app.cpp)
+  target_link_libraries(yoauthorize-test-app PRIVATE YoAuthorize::sdk)
+endif()
+
+if(TARGET ya_license_issuer)
+  add_executable(test_license_issuer test_issuer.cpp)
+  target_link_libraries(test_license_issuer PRIVATE
+    GTest::gtest_main
+    YoAuthorize::core
+    YoAuthorize::issuer
+  )
+
+  gtest_discover_tests(test_license_issuer)
+
+  if(TARGET ya_license_sdk)
+    add_executable(test_local_authorizer test_local_authorizer.cpp)
+    target_link_libraries(test_local_authorizer PRIVATE
+      GTest::gtest_main
+      YoAuthorize::issuer
+      YoAuthorize::sdk
+    )
+    gtest_discover_tests(test_local_authorizer)
+  endif()
+endif()
+
+if(TARGET yoauthorize-license-generator AND
+   TARGET yoauthorize-service AND
+   TARGET yoauthorize-test-app)
+  add_test(
+    NAME LocalDemoTest.FullDaemonSdkRoundTrip
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_local_demo.sh
+            ${PROJECT_BINARY_DIR} 2
+  )
+  set_tests_properties(LocalDemoTest.FullDaemonSdkRoundTrip PROPERTIES
+    TIMEOUT 15
+  )
+endif()
+
+if(TARGET yoauthorize-license-generator AND TARGET TestYoQt)
+  add_test(
+    NAME QtAuthorizationTest.LocalLicense
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} local
+  )
+  add_test(
+    NAME QtAuthorizationTest.HttpsActivation
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} remote
+  )
+  add_test(
+    NAME QtAuthorizationTest.RejectsWrongProduct
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} local-denied
+  )
+  add_test(
+    NAME QtAuthorizationTest.RejectsActivationCode
+    COMMAND bash ${PROJECT_SOURCE_DIR}/tools/run_qt_authorization_demo.sh
+            ${PROJECT_BINARY_DIR} remote-denied
+  )
+  set_tests_properties(
+    QtAuthorizationTest.LocalLicense
+    QtAuthorizationTest.HttpsActivation
+    QtAuthorizationTest.RejectsWrongProduct
+    QtAuthorizationTest.RejectsActivationCode
+    PROPERTIES TIMEOUT 20
+  )
+  set_tests_properties(
+    QtAuthorizationTest.RejectsWrongProduct
+    QtAuthorizationTest.RejectsActivationCode
+    PROPERTIES WILL_FAIL TRUE
+  )
+endif()

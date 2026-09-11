@@ -1,0 +1,12 @@
+{
+  auto_https disable_redirects
+}
+
+http://:80 {
+  redir {$PUBLIC_URL}{uri} permanent
+}
+
+{$CADDY_SITE_ADDRESS} {
+  header Alt-Svc "h3=\":{$CADDY_PUBLIC_HTTPS_PORT:443}\"; ma=2592000"
+  import Caddy.routes
+}
