@@ -99,13 +99,17 @@ pub async fn ready(State(state): State<AppState>) -> Response {
     (status, Json(json!({"status": if status == StatusCode::OK {"ok"} else {"unavailable"}, "postgres":postgres, "redis":redis}))).into_response()
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct RegisterRequest {
+    /// Nonblank; at most 200 UTF-8 bytes. Stored trimmed.
     name: String,
+    /// Trimmed and ASCII-lowercased; at most 320 bytes.
     email: String,
+    /// 10 to 1024 UTF-8 bytes.
     password: String,
 }
 
+#[utoipa::path(post, path = "/api/v1/auth/register", request_body = RegisterRequest, responses((status = 202, description = "Verification email sent; pending accounts receive a replacement token valid for 24 hours. Limit: 3 per normalized email per hour.")))]
 async fn register(
     State(state): State<AppState>,
     Json(input): Json<RegisterRequest>,
@@ -185,11 +189,12 @@ async fn register(
     Ok(StatusCode::ACCEPTED)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct TokenRequest {
     token: String,
 }
 
+#[utoipa::path(post, path = "/api/v1/auth/verify-email", request_body = TokenRequest, responses((status = 204, description = "Single-use verification token consumed.")))]
 async fn verify_email(
     State(state): State<AppState>,
     Json(input): Json<TokenRequest>,
@@ -215,12 +220,13 @@ async fn verify_email(
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct LoginRequest {
     email: String,
     password: String,
 }
 
+#[utoipa::path(post, path = "/api/v1/auth/login", request_body = LoginRequest, responses((status = 200, body = crate::openapi::LoginResponse, description = "Active account authenticated. Limit: 10 per normalized email per 15 minutes.")))]
 async fn login(State(state): State<AppState>, Json(input): Json<LoginRequest>) -> Result<Response> {
     let email = normalize_email(&input.email)?;
     enforce_rate_limit(&state, "login", &email, LOGIN_LIMIT.0, LOGIN_LIMIT.1).await?;
@@ -261,6 +267,7 @@ async fn login(State(state): State<AppState>, Json(input): Json<LoginRequest>) -
     Ok((headers, Json(json!({"csrfToken":csrf}))).into_response())
 }
 
+#[utoipa::path(post, path = "/api/v1/auth/logout", responses((status = 204, description = "Session deleted and cookie cleared.")))]
 async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Result<Response> {
     let principal = principal(&state.pool, &headers, true).await?;
     sqlx::query("DELETE FROM web_sessions WHERE id=$1")
@@ -282,6 +289,7 @@ async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Result<Res
         .into_response())
 }
 
+#[utoipa::path(get, path = "/api/v1/auth/me", responses((status = 200, body = crate::openapi::MeResponse, description = "Current user. Rotates the session CSRF token, invalidating the previous token. Read csrfToken from the body; no X-CSRF-Token response header is sent.")))]
 async fn me(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     let principal = principal(&state.pool, &headers, false).await?;
     let csrf = security::opaque_token().map_err(ApiError::Internal)?;
@@ -295,11 +303,12 @@ async fn me(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Va
     ))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct EmailRequest {
     email: String,
 }
 
+#[utoipa::path(post, path = "/api/v1/auth/forgot-password", request_body = EmailRequest, responses((status = 202, description = "Accepted whether or not an active account exists. Replaces reset tokens; token expires in one hour. Limit: 3 per normalized email per hour, shared with /forgot.")))]
 async fn forgot_password(
     State(state): State<AppState>,
     Json(input): Json<EmailRequest>,
@@ -337,12 +346,14 @@ async fn forgot_password(
     Ok(StatusCode::ACCEPTED)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct ResetRequest {
     token: String,
+    /// 10 to 1024 UTF-8 bytes.
     password: String,
 }
 
+#[utoipa::path(post, path = "/api/v1/auth/reset-password", request_body = ResetRequest, responses((status = 204, description = "Single-use reset token consumed, password changed, and all web sessions deleted. Device tokens are not revoked.")))]
 async fn reset_password(
     State(state): State<AppState>,
     Json(input): Json<ResetRequest>,
@@ -378,6 +389,7 @@ async fn reset_password(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(get, path = "/api/v1/licenses", responses((status = 200, body = [crate::openapi::LicenseSummary], description = "Owned licenses, newest first, at most 500. Bare array; no pagination parameters.")))]
 async fn user_licenses(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     let p = principal(&state.pool, &headers, false).await?;
     Ok(Json(Value::Array(
@@ -385,12 +397,14 @@ async fn user_licenses(State(state): State<AppState>, headers: HeaderMap) -> Res
     )))
 }
 
+#[utoipa::path(get, path = "/api/v1/devices", responses((status = 200, body = [crate::openapi::DeviceSummary], description = "Active bindings for owned licenses, most recently seen first; a device can appear once per license. Bare array, no pagination.")))]
 async fn user_devices(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     let p = principal(&state.pool, &headers, false).await?;
     let rows = sqlx::query("SELECT d.id,d.name,d.machine_hint,d.platform,d.last_seen_at,d.created_at,a.license_id FROM devices d JOIN activations a ON a.device_id=d.id AND a.unbound_at IS NULL JOIN licenses l ON l.id=a.license_id WHERE l.user_id=$1 ORDER BY d.last_seen_at DESC").bind(p.user_id).fetch_all(&state.pool).await?;
     Ok(Json(Value::Array(rows.into_iter().map(|r| json!({"id":r.get::<Uuid,_>("id"),"name":r.get::<String,_>("name"),"fingerprint":r.get::<String,_>("machine_hint"),"platform":r.get::<Option<String>,_>("platform"),"lastSeenAt":r.get::<DateTime<Utc>,_>("last_seen_at"),"activatedAt":r.get::<DateTime<Utc>,_>("created_at"),"licenseId":r.get::<Uuid,_>("license_id")})).collect())))
 }
 
+#[utoipa::path(delete, path = "/api/v1/devices/{id}", params(("id" = Uuid, Path, description = "Device UUID")), responses((status = 204, description = "All active bindings of this device to owned licenses unbound; associated tokens revoked and code counts decremented.")))]
 async fn unbind_device(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -442,18 +456,22 @@ async fn unbind_device(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(get, path = "/api/v1/admin/users", responses((status = 200, body = crate::openapi::UserPage, description = "Newest first; at most 500 users.")))]
 async fn admin_users(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     admin(&state.pool, &headers, false).await?;
     let rows = sqlx::query("SELECT id,email,name,role::text,status::text,created_at FROM users ORDER BY created_at DESC LIMIT 500").fetch_all(&state.pool).await?;
     Ok(Json(page(rows.into_iter().map(|r| json!({"id":r.get::<Uuid,_>("id"),"email":r.get::<String,_>("email"),"name":r.get::<String,_>("name"),"role":r.get::<String,_>("role"),"status":status_frontend(&r.get::<String,_>("status")),"createdAt":r.get::<DateTime<Utc>,_>("created_at")})).collect())))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct UpdateUser {
+    /// pending, active, disabled, or suspended (mapped to disabled). Null/omitted leaves unchanged.
     status: Option<String>,
+    /// user or admin. Null/omitted leaves unchanged.
     role: Option<String>,
 }
 
+#[utoipa::path(patch, path = "/api/v1/admin/users/{id}", params(("id" = Uuid, Path)), request_body = UpdateUser, responses((status = 204, description = "Updated; disabling deletes web sessions. A nonexistent UUID also returns 204.")))]
 async fn admin_update_user(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -497,18 +515,21 @@ async fn admin_update_user(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(get, path = "/api/v1/admin/products", responses((status = 200, body = crate::openapi::ProductPage, description = "All products ordered by name.")))]
 async fn admin_products(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     admin(&state.pool, &headers, false).await?;
     let rows = sqlx::query("SELECT p.id,p.code,p.name,p.description,count(f.id) feature_count FROM products p LEFT JOIN features f ON f.product_id=p.id GROUP BY p.id ORDER BY p.name").fetch_all(&state.pool).await?;
     Ok(Json(page(rows.into_iter().map(|r| json!({"id":r.get::<Uuid,_>("id"),"code":r.get::<String,_>("code"),"name":r.get::<String,_>("name"),"description":r.get::<Option<String>,_>("description"),"featureCount":r.get::<i64,_>("feature_count")})).collect())))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct ProductInput {
     name: String,
+    /// 1 to 100 ASCII letters, digits, underscores, dots, or hyphens.
     code: String,
     description: Option<String>,
 }
+#[utoipa::path(post, path = "/api/v1/admin/products", request_body = ProductInput, responses((status = 201, body = crate::openapi::CreatedId, description = "Product created.")))]
 async fn admin_create_product(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -535,6 +556,7 @@ async fn admin_create_product(
     Ok((StatusCode::CREATED, Json(json!({"id":id}))))
 }
 
+#[utoipa::path(get, path = "/api/v1/admin/features", responses((status = 200, body = crate::openapi::FeaturePage, description = "All features ordered by name.")))]
 async fn admin_features(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     admin(&state.pool, &headers, false).await?;
     let rows = sqlx::query("SELECT id,product_id,code,name FROM features ORDER BY name")
@@ -543,13 +565,15 @@ async fn admin_features(State(state): State<AppState>, headers: HeaderMap) -> Re
     Ok(Json(page(rows.into_iter().map(|r| json!({"id":r.get::<Uuid,_>("id"),"productId":r.get::<Uuid,_>("product_id"),"code":r.get::<String,_>("code"),"name":r.get::<String,_>("name")})).collect())))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 struct FeatureInput {
     product_id: Uuid,
     name: String,
+    /// 1 to 100 ASCII letters, digits, underscores, dots, or hyphens.
     code: String,
 }
+#[utoipa::path(post, path = "/api/v1/admin/features", request_body = FeatureInput, responses((status = 201, body = crate::openapi::CreatedId, description = "Feature created.")))]
 async fn admin_create_feature(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -576,22 +600,29 @@ async fn admin_create_feature(
     Ok((StatusCode::CREATED, Json(json!({"id":id}))))
 }
 
+#[utoipa::path(get, path = "/api/v1/admin/licenses", responses((status = 200, body = crate::openapi::LicensePage, description = "Newest first; at most 500 licenses.")))]
 async fn admin_licenses(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     admin(&state.pool, &headers, false).await?;
     Ok(Json(page(license_rows(&state.pool, "", None).await?)))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 struct LicenseInput {
     product_id: Uuid,
     user_id: Option<Uuid>,
+    /// trial, subscription, or permanent.
     license_type: String,
+    /// Must be null/omitted for permanent; required and in the future for trial/subscription.
     expires_at: Option<DateTime<Utc>>,
+    #[schema(minimum = 1, maximum = 10000)]
     device_limit: i32,
+    /// Defaults to 1. Database constraints can reject invalid values with 500.
     max_sessions: Option<i32>,
+    /// Only features belonging to the product are inserted; other IDs are silently ignored.
     feature_ids: Vec<Uuid>,
 }
+#[utoipa::path(post, path = "/api/v1/admin/licenses", request_body = LicenseInput, responses((status = 201, body = crate::openapi::CreatedLicense, description = "License created; full key returned here, masked in lists.")))]
 async fn admin_create_license(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -633,10 +664,12 @@ async fn admin_create_license(
     Ok((StatusCode::CREATED, Json(json!({"id":id,"key":key}))))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct LicenseUpdate {
+    /// active or revoked.
     status: String,
 }
+#[utoipa::path(patch, path = "/api/v1/admin/licenses/{id}", params(("id" = Uuid, Path)), request_body = LicenseUpdate, responses((status = 204, description = "Status updated and device events queued. A nonexistent UUID also returns 204.")))]
 async fn admin_update_license(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -672,21 +705,25 @@ async fn admin_update_license(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(get, path = "/api/v1/admin/activation-codes", responses((status = 200, body = crate::openapi::ActivationCodePage, description = "Newest first; at most 500 codes. Only masked hints are returned.")))]
 async fn admin_codes(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     admin(&state.pool, &headers, false).await?;
     let rows=sqlx::query("SELECT ac.id,ac.code_hint,p.name product_name,ac.activation_count,ac.activation_limit,ac.disabled_at,ac.expires_at,ac.created_at,u.email FROM activation_codes ac JOIN products p ON p.id=ac.product_id LEFT JOIN licenses l ON l.id=ac.license_id LEFT JOIN users u ON u.id=l.user_id ORDER BY ac.created_at DESC LIMIT 500").fetch_all(&state.pool).await?;
     Ok(Json(page(rows.into_iter().map(|r| { let disabled:Option<DateTime<Utc>>=r.get("disabled_at"); let expires:Option<DateTime<Utc>>=r.get("expires_at"); let count:i32=r.get("activation_count"); let limit:i32=r.get("activation_limit"); json!({"id":r.get::<Uuid,_>("id"),"code":r.get::<String,_>("code_hint"),"productName":r.get::<String,_>("product_name"),"status":if disabled.is_some()||expires.is_some_and(|x|x<Utc::now()){ "disabled" }else if count>=limit{"redeemed"}else{"active"},"createdAt":r.get::<DateTime<Utc>,_>("created_at"),"redeemedBy":r.get::<Option<String>,_>("email")}) }).collect())))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 struct CodeInput {
     product_id: Uuid,
     license_id: Option<Uuid>,
+    /// Defaults to 1; range 1 to 100.
     quantity: Option<u32>,
+    /// Defaults to 1; range 1 to 10000.
     activation_limit: Option<i32>,
     expires_at: Option<DateTime<Utc>>,
 }
+#[utoipa::path(post, path = "/api/v1/admin/activation-codes", request_body = CodeInput, responses((status = 201, body = crate::openapi::CreatedCodes, description = "Full codes returned only at creation. Optional license must belong to the product; otherwise activation creates an unassigned permanent license.")))]
 async fn admin_create_codes(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -743,6 +780,7 @@ async fn admin_create_codes(
     Ok((StatusCode::CREATED, Json(json!({"codes":codes}))))
 }
 
+#[utoipa::path(get, path = "/api/v1/admin/audit-logs", responses((status = 200, body = crate::openapi::AuditPage, description = "Descending audit ID; at most 1000 entries.")))]
 async fn admin_audit(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {
     admin(&state.pool, &headers, false).await?;
     let rows=sqlx::query("SELECT a.id,a.action,a.target_type,a.target_id,a.ip_address::text,a.created_at,u.email FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_user_id ORDER BY a.id DESC LIMIT 1000").fetch_all(&state.pool).await?;
@@ -751,17 +789,28 @@ async fn admin_audit(State(state): State<AppState>, headers: HeaderMap) -> Resul
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ActivationRequest {
+    #[schema(example = 1, minimum = 1, maximum = 1)]
     pub protocol_version: u16,
+    /// Product CODE, not a UUID. Unlike admin DTOs, activation uses snake_case.
+    #[schema(example = "desktop-pro")]
     pub product_id: String,
+    #[schema(example = "YA-EXAMPLEONLYNOTVALID00")]
     pub activation_code: String,
+    /// Nonempty, at most 1024 UTF-8 bytes.
+    #[schema(example = "machine-fingerprint-example")]
     pub machine_id: String,
+    /// Optional; if supplied, 1 to 200 UTF-8 bytes, scoped to the activation code.
     pub idempotency_key: Option<String>,
 }
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ActivationResponse {
+    /// Standard Base64-encoded signed license blob.
     pub license: String,
+    /// PUBLIC_URL converted to ws/wss, followed by /api/v1/device/events.
     pub realtime_url: String,
+    /// Fresh opaque bearer token (not a JWT), including on replay. Valid for 24 hours.
     pub access_token: String,
+    /// Token expiry as Unix seconds.
     pub token_expire_time: i64,
 }
 
@@ -963,6 +1012,7 @@ async fn finish_activation(
     }))
 }
 
+#[utoipa::path(get, path = "/api/v1/device/events", responses((status = 101, description = "WebSocket upgrade, not an HTTP JSON response. Use a native WebSocket client capable of sending Authorization: Bearer <opaque device token>; Swagger UI cannot execute this contract and browser WebSocket cannot set this header. No cookie or query-token authentication. Server polls every 15 seconds, rechecks authorization, sends JSON text events (license.updated, license.revoked, device.unbound, features.changed) and server.ping with RFC3339 time. Each connection starts its event cursor at zero, so historical events can repeat; no resume parameter. Revocation/unbinding events are attempted before disconnect; expired/invalid authorization or database authorization failure closes the connection.")))]
 async fn device_events(
     State(state): State<AppState>,
     headers: HeaderMap,

@@ -3,6 +3,7 @@
 pub mod config;
 mod error;
 mod mail;
+mod openapi;
 mod routes;
 pub mod security;
 mod signer;
@@ -18,7 +19,6 @@ use signer::SignerClient;
 use sqlx::{PgPool, Row, postgres::PgPoolOptions};
 use subtle::ConstantTimeEq;
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
-use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
@@ -30,20 +30,16 @@ pub struct AppState {
     pub signer: SignerClient,
 }
 
-#[derive(OpenApi)]
-#[openapi(
-    paths(routes::live, routes::ready, routes::activate),
-    components(schemas(routes::ActivationRequest, routes::ActivationResponse)),
-    tags((name = "YoAuthorize", description = "Remote licensing API"))
-)]
-struct ApiDoc;
-
 pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/health/live", get(routes::live))
         .route("/health/ready", get(routes::ready))
         .merge(routes::api())
-        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .merge(
+            SwaggerUi::new("/docs")
+                .url("/api-docs/openapi.json", openapi::document())
+                .config(openapi::swagger_config()),
+        )
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
